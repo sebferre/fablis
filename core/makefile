@@ -1,5 +1,5 @@
 
-all: focus.cmo syntax.cmo spec.cmo
+all: focus.cmo syntax.cmo lis.cmo
 
 clean:
 	rm -f *.cm[ioax]

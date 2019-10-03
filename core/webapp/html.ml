@@ -56,7 +56,27 @@ let glyphicon name = "<span class=\"glyphicon glyphicon-" ^ name ^ "\"></span>"
 (*let open_new_window lis ~height uri =
   html_a uri (html_img ~classe:"open-new-window" ~height ~alt:"Open" "icon-open-new-window.png")*)
 
+let table ?id ?classe ?title headers rows =
+  assert (headers <> []);
+  let buf = Buffer.create 1000 in
+  let add s = Buffer.add_string buf s in
+  add "<table";
+  add (match id with None -> "" | Some id -> " id=\"" ^ id ^ "\"");
+  add (match classe with None -> "" | Some cl -> " class=\"" ^ cl ^ "\"");
+  add (match title with None -> "" | Some tit -> " title=\"" ^ tit ^ "\"");
+  add "><tr>";
+  headers |> List.iter (fun h ->
+    add "<th class=\"header\">"; add h; add "</th>");
+  add "</tr>";
+  rows |> List.iter (fun row ->
+    add "<tr>";
+    row |> List.iter (fun cell ->
+      add "<td>"; add cell; add "</td>");
+    add "</tr>");
+  add "</table>";
+  Buffer.contents buf
 
+								     
 (* generic dictionary with automatic generation of keys *)
 
 class ['a] dico (prefix : string) =

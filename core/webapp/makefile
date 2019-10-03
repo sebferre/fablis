@@ -1,5 +1,5 @@
 
-all: jsutils.cmo webapp.cmo html.cmo widget_focus.cmo
+all: jsutils.cmo webapp.cmo html.cmo widget_focus.cmo widget_table.cmo
 
 clean:
 	rm -f *.cm[ioax]

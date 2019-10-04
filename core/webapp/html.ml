@@ -6,6 +6,10 @@ type id = string
 let selector_id id = "#" ^ id
 
 (* utilities for generating HTML *)
+
+let attr_opt name = function
+  | None -> ""
+  | Some id -> " " ^ name ^ "=\"" ^ id ^ "\""
 			     
 let pre text =
   let text = Regexp.global_replace (Regexp.regexp "<") text "&lt;" in
@@ -13,29 +17,29 @@ let pre text =
   "<pre>" ^ text ^ "</pre>"
 
 let span ?id ?classe ?title text =
-  "<span" ^
-    (match id with None -> "" | Some id -> " id=\"" ^ id ^ "\"") ^
-    (match classe with None -> "" | Some cl -> " class=\"" ^ cl ^ "\"") ^
-    (match title with None -> "" | Some tit -> " title=\"" ^ tit ^ "\"") ^
-    ">" ^ text ^ "</span>"
+  "<span"
+  ^ attr_opt "id" id
+  ^ attr_opt "class" classe
+  ^ attr_opt "title" title
+  ^ ">" ^ text ^ "</span>"
 
 let div ?id ?classe ?title text =
-  "<div" ^
-    (match id with None -> "" | Some id -> " id=\"" ^ id ^ "\"") ^
-    (match classe with None -> "" | Some cl -> " class=\"" ^ cl ^ "\"") ^
-    (match title with None -> "" | Some tit -> " title=\"" ^ tit ^ "\"") ^
-    ">" ^ text ^ "</div>"
+  "<div"
+  ^ attr_opt "id" id
+  ^ attr_opt "class" classe
+  ^ attr_opt "title" title
+  ^ ">" ^ text ^ "</div>"
 
 let a url html =
   "<a target=\"_blank\" href=\"" ^ url ^ "\">" ^ html ^ "</a>"
 
 let img ?id ?classe ?height ~alt ~title url =
-  "<img" ^
-    (match id with None -> "" | Some i -> " id=\"" ^ i ^ "\"") ^
-    (match classe with None -> "" | Some c -> " class=\"" ^ c ^ "\"") ^
-    " src=\"" ^ url ^ "\"" ^
-    (match height with None -> "" | Some h -> " height=\"" ^ string_of_int h ^ "\"") ^
-    " alt=\"" ^ alt ^ "\" title=\"" ^ title ^ "\">"
+  "<img"
+  ^ attr_opt "id" id
+  ^ attr_opt "class" classe
+  ^ " src=\"" ^ url ^ "\""
+  ^ (match height with None -> "" | Some h -> " height=\"" ^ string_of_int h ^ "\"")
+  ^ " alt=\"" ^ alt ^ "\" title=\"" ^ title ^ "\">"
 
 let option ~value label =
   "<option value=\"" ^ value ^ "\">" ^ label ^ "</option>"						
@@ -61,12 +65,18 @@ let table ?id ?classe ?title headers rows =
   let buf = Buffer.create 1000 in
   let add s = Buffer.add_string buf s in
   add "<table";
-  add (match id with None -> "" | Some id -> " id=\"" ^ id ^ "\"");
-  add (match classe with None -> "" | Some cl -> " class=\"" ^ cl ^ "\"");
-  add (match title with None -> "" | Some tit -> " title=\"" ^ tit ^ "\"");
+  add (attr_opt "id" id);
+  add (attr_opt "class" classe);
+  add (attr_opt "title" title);
   add "><tr>";
-  headers |> List.iter (fun h ->
-    add "<th class=\"header\">"; add h; add "</th>");
+  headers |> List.iter (fun (id_opt,classe_opt,title_opt,h) ->
+    add "<th";
+    add (attr_opt "id" id_opt);
+    add (attr_opt "class" (match classe_opt with None -> Some "header" | Some cl -> Some ("header " ^ cl)));
+    add (attr_opt "title" title_opt);
+    add ">";
+    add h;
+    add "</th>");
   add "</tr>";
   rows |> List.iter (fun row ->
     add "<tr>";

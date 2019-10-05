@@ -86,7 +86,35 @@ let table ?id ?classe ?title headers rows =
   add "</table>";
   Buffer.contents buf
 
-								     
+
+let ul ?id ?classe ?title items =
+  let buf = Buffer.create 1000 in
+  let add s = Buffer.add_string buf s in
+  add "<ul";
+  add (attr_opt "id" id);
+  add (attr_opt "class" classe);
+  add (attr_opt "title" title);
+  add ">";
+  items |> List.iter (fun (id_opt,classe_opt,title_opt,html) ->
+    add "<li";
+    add (attr_opt "id" id_opt);
+    add (attr_opt "class" classe_opt);
+    add (attr_opt "title" title_opt);
+    add ">";
+    add html;
+    add "</li>");
+  add "</ul>";
+  Buffer.contents buf
+
+let input ?id ?classe ?title ?placeholder input_type =
+  "<input"
+  ^ attr_opt "id" id
+  ^ attr_opt "class" classe
+  ^ attr_opt "title" title
+  ^ attr_opt "type" (Some input_type)
+  ^ attr_opt "placeholder" placeholder
+  ^ ">"
+		  
 (* generic dictionary with automatic generation of keys *)
 
 class ['a] dico (prefix : string) =

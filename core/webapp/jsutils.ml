@@ -38,6 +38,22 @@ let jquery_all_from (root : #Dom_html.nodeSelector Js.t) s k =
   done
 let jquery_all s k = jquery_all_from Dom_html.document s k
 
+let jquery_all_input_from (root : #Dom_html.nodeSelector Js.t) s k =
+  let nodelist = root##querySelectorAll(string s) in
+  let n = nodelist##length in
+  for i=0 to n-1 do
+    Opt.iter nodelist##item(i) (fun elt ->
+      Opt.iter (Dom_html.CoerceTo.input elt) (fun input ->
+	k input))
+  done
+
+let jquery_parent elt k =
+  Opt.iter (elt##parentNode) (fun node ->
+    Opt.iter (Dom.CoerceTo.element node) (fun parent ->
+      let elt = Dom_html.element parent in
+      k elt))
+
+	   
 let jquery_get_innerHTML sel =
   let res = ref "" in
   jquery sel (fun elt -> res := to_string elt##innerHTML);

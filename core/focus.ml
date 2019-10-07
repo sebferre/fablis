@@ -25,6 +25,10 @@ let ctx_of_list_ctx (x : 'a) (ll,rr : 'a list_ctx) : ('a * 'a list_ctx) list_ctx
     
 let map_list_ctx (f : 'a -> 'b) (ll,rr : 'a list_ctx) : 'b list_ctx = (List.map f ll, List.map f rr)
 
+let rec make_list (arity : int) (x : 'a) : 'a list =
+  if arity = 0
+  then []
+  else x :: make_list (arity-1) x
 									
 type step = DOWN | RIGHT
 type path = step list
@@ -45,3 +49,10 @@ let list_focus_of_path_list path lr =
   | [] -> assert false
   | x::rr -> aux path ([],rr) x
 			     
+class ['a] input (default : 'a) =
+object
+  val mutable v : 'a = default
+  method set (new_v : 'a) = v <- new_v
+  method get : 'a = v
+end
+

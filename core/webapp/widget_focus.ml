@@ -4,9 +4,6 @@
 open Js
 open Jsutils
 
-let html_of_input input =
-  failwith "Widget_focus: unexpected 'input' in focus syntax"
-       
 class ['word,'input,'focus] widget
   ~(id : Html.id) (* where to insert the widget in the DOM *)
   ~(html_of_word : 'word -> Html.t) (* rendering words *)
@@ -24,7 +21,7 @@ object
     focus_dico#clear;
     jquery (Html.selector_id id)
       (fun elt ->
-        let html = Html.syntax ~dico:focus_dico ~html_of_word ~html_of_input xml in
+        let html = Html.syntax ~focus_dico ~html_of_word xml in
 	elt##innerHTML <- string html;
 	stop_links_propagation_from elt;
 	jquery_all_from elt ".focus"

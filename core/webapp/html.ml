@@ -153,7 +153,15 @@ end
 
 
 (* generating HTML for Syntax.xml *)
-  
+
+type input_update = string -> unit
+type input_info =
+  { input_type : string; (* text, checkbox, ... *)
+    placeholder : string;
+    input_update : input_update;
+  }
+type input_dico = input_update dico
+				
 let focus_highlight h xml =
   if h
   then span ~classe:"highlighted" xml
@@ -166,7 +174,7 @@ let focus_dropdown =
   span ~id:"focus-dropdown"
 	    (glyphicon "menu-hamburger" ^
 	       "<div id=\"focus-dropdown-content\" style=\"display:none\"></div>")
-	 
+
 let append_node_to_xml node xml =
   List.rev (node :: List.rev xml)
 let append_node_to_xml_list node lxml =
@@ -174,9 +182,10 @@ let append_node_to_xml_list node lxml =
   | [] -> [[node]]
   | last::rest -> List.rev (append_node_to_xml node last :: rest)
 
-let syntax ~(dico : 'focus dico)
+let syntax ?(focus_dico : 'focus dico option)
+	   ?(input_dico : input_dico option)
 	   ~(html_of_word : 'word -> t)
-	   ~(html_of_input : 'input -> t)
+	   ?(html_info_of_input : ('input -> input_info) option)
 	   (xml : ('word,'input,'focus) Syntax.xml) : t =
   let rec aux_xml ~highlight xml =
     let open Syntax in
@@ -200,7 +209,14 @@ let syntax ~(dico : 'focus dico)
     match node with
     | Kwd s -> s
     | Word w -> html_of_word w
-    | Input dt -> html_of_input dt
+    | Input i ->
+       ( match input_dico, html_info_of_input with
+	 | None, _
+	 | _, None -> failwith "Html.syntax: unexpected input"
+	 | Some input_dico, Some html_info_of_input ->
+	    let info = html_info_of_input i in
+	    let key = input_dico#add info.input_update in
+	    input ~id:key ~classe:"suggestion-input" ~placeholder:info.placeholder info.input_type )
     | Selection xml_selop -> aux_xml ~highlight xml_selop
     | Suffix (xml,suf) -> aux_xml ~highlight xml ^ suf
     | Enum (sep,lxml) -> String.concat sep (List.map (aux_xml ~highlight) lxml)
@@ -216,9 +232,12 @@ let syntax ~(dico : 'focus dico)
 			(fun xml -> focus_highlight highlight (aux_xml ~highlight xml))
 			lxml)
     | Focus (focus,xml) ->
-      let id = dico#add focus in
       let html = aux_xml ~highlight xml in
-      span ~id ~classe:"focus" html
+      ( match focus_dico with
+	| None -> html
+	| Some focus_dico ->
+	   let id = focus_dico#add focus in
+	   span ~id ~classe:"focus" html )
     | Highlight xml ->
        focus_highlight true
 	 (aux_xml ~highlight:true xml)

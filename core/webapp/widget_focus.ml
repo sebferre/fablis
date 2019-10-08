@@ -14,6 +14,9 @@ object
   val mutable on_focus_change : 'focus -> unit = fun foc -> ()
   method on_focus_change f = on_focus_change <- f
 
+  val mutable on_focus_up : unit -> unit = fun () -> ()
+  method on_focus_up f = on_focus_up <- f
+
   val mutable on_focus_delete : unit -> unit = fun () -> ()
   method on_focus_delete f = on_focus_delete <- f
 					  
@@ -30,6 +33,10 @@ object
 	      let key = to_string (elt_foc##id) in
 	      let foc = focus_dico#get key in
 	      on_focus_change foc));
+	jquery_from elt "#focusup-current-focus"
+	   (onclick (fun elt_button ev ->
+	      Dom_html.stopPropagation ev;
+	      on_focus_up ()));
 	jquery_from elt "#delete-current-focus"
 	   (onclick (fun elt_button ev ->
 	      Dom_html.stopPropagation ev;

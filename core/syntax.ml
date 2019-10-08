@@ -13,7 +13,7 @@ and ('word,'input,'focus) node =
   | Focus of 'focus * ('word,'input,'focus) xml
   | Highlight of ('word,'input,'focus) xml
   | Suspended of ('word,'input,'focus) xml
-  | DeleteCurrentFocus
+  | ControlCurrentFocus
   | DeleteIncr
 
 class type ['word,'input] lexicon =
@@ -37,7 +37,7 @@ and xml_node_text_content lexicon = function
   | Focus (foc,x) -> xml_text_content lexicon x
   | Highlight x -> xml_text_content lexicon x
   | Suspended x -> xml_text_content lexicon x
-  | DeleteCurrentFocus -> ""
+  | ControlCurrentFocus -> ""
   | DeleteIncr -> ""
 
 let xml_list_ctx (f : 'a -> 'a Focus.list_ctx -> ('word,'input,'focus) xml)

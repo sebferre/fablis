@@ -167,6 +167,8 @@ let focus_highlight h xml =
   then span ~classe:"highlighted" xml
   else xml
 
+let icon_focusup ?id ~title () =
+  span ?id ~title (glyphicon "fullscreen" (*"chevron-up"*))
 let icon_delete ?id ~title () =
   span ?id ~title (glyphicon "remove")
 
@@ -175,6 +177,11 @@ let focus_dropdown =
 	    (glyphicon "menu-hamburger" ^
 	       "<div id=\"focus-dropdown-content\" style=\"display:none\"></div>")
 
+let focus_controls =
+  icon_focusup ~id:"focusup-current-focus" ~title:"Move focus up" ()
+  ^ icon_delete ~id:"delete-current-focus" ~title:"Delete current focus" ()
+(* ^ focus_dropdown *) (* TODO *)
+	    
 let append_node_to_xml node xml =
   List.rev (node :: List.rev xml)
 let append_node_to_xml_list node lxml =
@@ -190,16 +197,16 @@ let syntax ?(focus_dico : 'focus dico option)
   let rec aux_xml ~highlight xml =
     let open Syntax in
     match xml with
-    | Enum (sep,lxml) :: DeleteCurrentFocus :: xml ->
-       aux_xml ~highlight (Enum (sep, append_node_to_xml_list DeleteCurrentFocus lxml) :: xml)
-    | Coord (coord,lxml) :: DeleteCurrentFocus :: xml ->
-       aux_xml ~highlight (Coord (coord, append_node_to_xml_list DeleteCurrentFocus lxml) :: xml)
-    | Block lxml :: DeleteCurrentFocus :: xml ->
-       aux_xml ~highlight (Block (append_node_to_xml_list DeleteCurrentFocus lxml) :: xml)
-    | Focus (foc,xml1) :: DeleteCurrentFocus :: xml ->
-       aux_xml ~highlight (Focus (foc, append_node_to_xml DeleteCurrentFocus xml1) :: xml)
-    | Highlight xml1 :: DeleteCurrentFocus :: xml ->
-       aux_xml ~highlight (Highlight (append_node_to_xml DeleteCurrentFocus xml1) :: xml)
+    | Enum (sep,lxml) :: ControlCurrentFocus :: xml ->
+       aux_xml ~highlight (Enum (sep, append_node_to_xml_list ControlCurrentFocus lxml) :: xml)
+    | Coord (coord,lxml) :: ControlCurrentFocus :: xml ->
+       aux_xml ~highlight (Coord (coord, append_node_to_xml_list ControlCurrentFocus lxml) :: xml)
+    | Block lxml :: ControlCurrentFocus :: xml ->
+       aux_xml ~highlight (Block (append_node_to_xml_list ControlCurrentFocus lxml) :: xml)
+    | Focus (foc,xml1) :: ControlCurrentFocus :: xml ->
+       aux_xml ~highlight (Focus (foc, append_node_to_xml ControlCurrentFocus xml1) :: xml)
+    | Highlight xml1 :: ControlCurrentFocus :: xml ->
+       aux_xml ~highlight (Highlight (append_node_to_xml ControlCurrentFocus xml1) :: xml)
     | Focus (foc1, xml1) :: Focus (foc2, xml2) :: xml when foc1 = foc2 -> aux_xml ~highlight (Focus (foc1, xml1 @ xml2) :: xml)
     | Highlight xml1 :: Highlight xml2 :: xml -> aux_xml ~highlight (Highlight (xml1 @ xml2) :: xml)
     | node :: xml -> aux_node ~highlight node ^ (if xml=[] then "" else " " ^ aux_xml ~highlight xml)
@@ -243,9 +250,8 @@ let syntax ?(focus_dico : 'focus dico option)
 	 (aux_xml ~highlight:true xml)
     | Suspended xml ->
       span ~classe:"suspended" (aux_xml ~highlight xml)
-    | DeleteCurrentFocus ->
-       icon_delete ~id:"delete-current-focus" ~title:"Delete current focus" () ^
-	 focus_dropdown
+    | ControlCurrentFocus ->
+       focus_controls
     | DeleteIncr ->
        icon_delete ~title:"Remove element at focus" ()
   in

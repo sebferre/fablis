@@ -17,6 +17,9 @@ object (self)
     past <- present::past;
     present <- p;
     future <- []
+
+  method replace (p : 'place) : unit =
+    present <- p
 		
   method home : unit =
     present#abort;
@@ -64,7 +67,7 @@ let start
        let rec render_hist p =
 	 render_place p callback_hist
        and callback_hist ~push_in_history p =
-	 if push_in_history then hist#push p;
+	 if push_in_history then hist#push p else hist#replace p;
 	 render_hist p
        in
        (* navigation controls *)

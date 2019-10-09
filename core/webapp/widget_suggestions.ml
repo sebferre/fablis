@@ -13,20 +13,31 @@ object
   val mutable on_suggestion_selection : 'suggestion -> unit = fun sugg -> ()
   method on_suggestion_selection f = on_suggestion_selection <- f
 								  
-  method set_suggestions (lsugg : 'suggestion list) : unit =
+  method set_suggestions (lcol : string list) (llsugg : 'suggestion list list) : unit =
+    assert (List.length lcol = List.length llsugg);
     sugg_dico#clear;
     input_dico#clear;
     jquery (Html.selector_id id)
       (fun elt ->
+       let lhtml =
+	 List.map2
+	   (fun col lsugg ->
+	    Html.div
+	      ~classe:(col ^ " column-suggestions")
+	      (Html.div
+		 ~classe:"panel panel-default panel-suggestions"
+		 (Html.div
+		    ~classe:"panel-body list-suggestions css-treeview"
+		    (Html.ul
+		       (List.map
+			  (fun sugg ->
+			   let key = sugg_dico#add sugg in
+			   (Some key, Some "suggestion", None, html_of_suggestion ~input_dico sugg))
+			  lsugg)))))
+	   lcol llsugg in
        let html =
-	 Html.div
-	   ~classe:"list-suggestions css-treeview"
-	   (Html.ul
-	      (List.map
-		 (fun sugg ->
-		  let key = sugg_dico#add sugg in
-		  (Some key, Some "suggestion", None, html_of_suggestion ~input_dico sugg))
-		 lsugg)) in
+	 Html.div ~classe:"row"
+		  (String.concat "\n" lhtml) in
        elt##innerHTML <- string html;
        stop_propagation_from elt ".suggestion-input";
        jquery_all_input_from elt ".suggestion-input"

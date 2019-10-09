@@ -54,6 +54,7 @@ open Jsutils
 let start
       ~(make_lis : (string * string) list -> 'place #Lis.lis)
       ~(render_place : 'place -> (push_in_history:bool -> 'place -> unit) -> unit)
+      ~(error_message : exn -> string)
     : unit =
   firebug "Starting!";
   Dom_html.window##onload <-
@@ -67,8 +68,12 @@ let start
        let rec render_hist p =
 	 render_place p callback_hist
        and callback_hist ~push_in_history p =
-	 if push_in_history then hist#push p else hist#replace p;
-	 render_hist p
+	 try
+	   render_hist p;
+	   if push_in_history then hist#push p else hist#replace p
+	 with exn ->
+	   alert (error_message exn);
+	   render_hist hist#present (* recovering from error *)
        in
        (* navigation controls *)
        let refresh () = render_hist hist#present in

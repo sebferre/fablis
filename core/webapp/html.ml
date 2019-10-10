@@ -203,6 +203,8 @@ let syntax ?(focus_dico : 'focus dico option)
        aux_xml ~highlight (Coord (coord, append_node_to_xml_list ControlCurrentFocus lxml) :: xml)
     | Block lxml :: ControlCurrentFocus :: xml ->
        aux_xml ~highlight (Block (append_node_to_xml_list ControlCurrentFocus lxml) :: xml)
+    | Indent xml1 :: ControlCurrentFocus :: xml ->
+       aux_xml ~highlight (Indent (xml1 @ [ControlCurrentFocus]) :: xml)
     | Focus (foc,xml1) :: ControlCurrentFocus :: xml ->
        aux_xml ~highlight (Focus (foc, append_node_to_xml ControlCurrentFocus xml1) :: xml)
     | Highlight xml1 :: ControlCurrentFocus :: xml ->
@@ -234,10 +236,12 @@ let syntax ?(focus_dico : 'focus dico option)
 	(List.map (fun xml -> focus_highlight highlight (aux_xml ~highlight xml)) lxml)
       ^ "</li></ul>"
     | Block lxml ->
-       String.concat "<br>"
+       String.concat ""
 		     (List.map
-			(fun xml -> focus_highlight highlight (aux_xml ~highlight xml))
+			(fun xml -> div (focus_highlight highlight (aux_xml ~highlight xml)))
 			lxml)
+    | Indent xml ->
+       div ~classe:"indented" (focus_highlight highlight (aux_xml ~highlight xml))
     | Focus (focus,xml) ->
       let html = aux_xml ~highlight xml in
       ( match focus_dico with
@@ -255,5 +259,5 @@ let syntax ?(focus_dico : 'focus dico option)
     | DeleteIncr ->
        icon_delete ~title:"Remove element at focus" ()
   in
-  aux_xml ~highlight:false xml
+  div (aux_xml ~highlight:false xml)
 

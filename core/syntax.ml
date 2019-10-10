@@ -10,6 +10,7 @@ and ('word,'input,'focus) node =
   | Quote of string * ('word,'input,'focus) xml * string (* quoted xml *)
   | Coord of ('word,'input,'focus) xml * ('word,'input,'focus) xml list (* coordination: eg. 'and' *)
   | Block of ('word,'input,'focus) xml list
+  | Indent of ('word,'input,'focus) xml
   | Focus of 'focus * ('word,'input,'focus) xml
   | Highlight of ('word,'input,'focus) xml
   | Suspended of ('word,'input,'focus) xml
@@ -34,6 +35,7 @@ and xml_node_text_content lexicon = function
   | Quote (left, x, right) -> left ^ xml_text_content lexicon x ^ right
   | Coord (xsep,xs) -> String.concat (" " ^ xml_text_content lexicon xsep ^ " ") (List.map (xml_text_content lexicon) xs)
   | Block xs -> String.concat "\n" (List.map (xml_text_content lexicon) xs)
+  | Indent x -> xml_text_content lexicon x
   | Focus (foc,x) -> xml_text_content lexicon x
   | Highlight x -> xml_text_content lexicon x
   | Suspended x -> xml_text_content lexicon x

@@ -56,9 +56,9 @@ object
 	     let sugg = sugg_dico#get key in
 	     on_suggestion_selection sugg));
        jquery_all_from elt ".suggestion-input"
-	   (onenter (fun input_elt ev ->
-	      jquery_parent input_elt (fun parent_elt ->
-		let key = to_string parent_elt##id in
+	  (onenter (fun input_elt ev ->
+	      jquery_ancestor ~classe:"suggestion" input_elt (fun ancestor_elt ->
+		let key = to_string ancestor_elt##id in
 		let sugg = sugg_dico#get key in
 		on_suggestion_selection sugg))))
 

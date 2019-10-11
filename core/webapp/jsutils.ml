@@ -53,6 +53,14 @@ let jquery_parent elt k =
       let elt = Dom_html.element parent in
       k elt))
 
+let jquery_ancestor ~classe elt k = (* finding first ancestor with some class *)
+  let rec find_ancestor elt =
+    if to_bool (elt##classList##contains (string classe))
+    then k elt
+    else jquery_parent elt (fun parent -> find_ancestor parent)
+  in
+  find_ancestor elt
+
 	   
 let jquery_get_innerHTML sel =
   let res = ref "" in

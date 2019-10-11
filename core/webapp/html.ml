@@ -5,6 +5,15 @@ type id = string
 
 let selector_id id = "#" ^ id
 
+(* general utilities *)
+
+let list_map_first (f : first:bool -> 'a -> 'b) (l : 'a list) : 'b list =
+  let rec aux ~first = function
+    | [] -> []
+    | x::r -> f ~first x :: aux ~first:false r
+  in
+  aux ~first:true l
+			     
 (* utilities for generating HTML *)
 
 let attr_opt name = function
@@ -194,26 +203,29 @@ let syntax ?(focus_dico : 'focus dico option)
 	   ~(html_of_word : 'word -> t)
 	   ?(html_info_of_input : ('input -> input_info) option)
 	   (xml : ('word,'input,'focus) Syntax.xml) : t =
-  let rec aux_xml ~highlight xml =
+  let rec aux_xml ~highlight ~linestart xml =
     let open Syntax in
     match xml with
     | Enum (sep,lxml) :: ControlCurrentFocus :: xml ->
-       aux_xml ~highlight (Enum (sep, append_node_to_xml_list ControlCurrentFocus lxml) :: xml)
+       aux_xml ~highlight ~linestart (Enum (sep, append_node_to_xml_list ControlCurrentFocus lxml) :: xml)
     | Coord (coord,lxml) :: ControlCurrentFocus :: xml ->
-       aux_xml ~highlight (Coord (coord, append_node_to_xml_list ControlCurrentFocus lxml) :: xml)
+       aux_xml ~highlight ~linestart (Coord (coord, append_node_to_xml_list ControlCurrentFocus lxml) :: xml)
     | Block lxml :: ControlCurrentFocus :: xml ->
-       aux_xml ~highlight (Block (append_node_to_xml_list ControlCurrentFocus lxml) :: xml)
+       aux_xml ~highlight ~linestart (Block (append_node_to_xml_list ControlCurrentFocus lxml) :: xml)
     | Indent xml1 :: ControlCurrentFocus :: xml ->
-       aux_xml ~highlight (Indent (xml1 @ [ControlCurrentFocus]) :: xml)
+       aux_xml ~highlight ~linestart (Indent (xml1 @ [ControlCurrentFocus]) :: xml)
     | Focus (foc,xml1) :: ControlCurrentFocus :: xml ->
-       aux_xml ~highlight (Focus (foc, append_node_to_xml ControlCurrentFocus xml1) :: xml)
+       aux_xml ~highlight ~linestart (Focus (foc, append_node_to_xml ControlCurrentFocus xml1) :: xml)
     | Highlight xml1 :: ControlCurrentFocus :: xml ->
-       aux_xml ~highlight (Highlight (append_node_to_xml ControlCurrentFocus xml1) :: xml)
-    | Focus (foc1, xml1) :: Focus (foc2, xml2) :: xml when foc1 = foc2 -> aux_xml ~highlight (Focus (foc1, xml1 @ xml2) :: xml)
-    | Highlight xml1 :: Highlight xml2 :: xml -> aux_xml ~highlight (Highlight (xml1 @ xml2) :: xml)
-    | node :: xml -> aux_node ~highlight node ^ (if xml=[] then "" else " " ^ aux_xml ~highlight xml)
+       aux_xml ~highlight ~linestart (Highlight (append_node_to_xml ControlCurrentFocus xml1) :: xml)
+    | Focus (foc1, xml1) :: Focus (foc2, xml2) :: xml when foc1 = foc2 ->
+       aux_xml ~highlight ~linestart (Focus (foc1, xml1 @ xml2) :: xml)
+    | Highlight xml1 :: Highlight xml2 :: xml ->
+       aux_xml ~highlight ~linestart (Highlight (xml1 @ xml2) :: xml)
+    | node :: xml ->
+       aux_node ~highlight ~linestart node ^ (if xml=[] then "" else " " ^ aux_xml ~highlight ~linestart:false xml)
     | [] -> ""
-  and aux_node ~highlight node = 
+  and aux_node ~highlight ~linestart node = 
     let open Syntax in
     match node with
     | Kwd s -> s
@@ -226,24 +238,33 @@ let syntax ?(focus_dico : 'focus dico option)
 	    let info = html_info_of_input i in
 	    let key = input_dico#add info.input_update in
 	    input ~id:key ~classe:"suggestion-input" ~placeholder:info.placeholder info.input_type )
-    | Selection xml_selop -> aux_xml ~highlight xml_selop
-    | Suffix (xml,suf) -> aux_xml ~highlight xml ^ suf
-    | Enum (sep,lxml) -> String.concat sep (List.map (aux_xml ~highlight) lxml)
-    | Quote (left, xml, right) -> left ^ aux_xml ~highlight xml ^ right
+    | Selection xml_selop -> aux_xml ~highlight ~linestart xml_selop
+    | Suffix (xml,suf) ->
+       aux_xml ~highlight ~linestart xml ^ suf
+    | Enum (sep,lxml) ->
+       String.concat sep
+		     (list_map_first
+			(fun ~first xml -> aux_xml ~highlight ~linestart:(linestart && first) xml)
+			lxml)
+    | Quote (left, xml, right) ->
+       left ^ aux_xml ~highlight ~linestart:false xml ^ right
     | Coord (coord,lxml) ->
-      "<ul class=\"coordination\"><li>"
-      ^ String.concat ("</li><li> " ^ focus_highlight highlight (aux_xml ~highlight coord ^ " "))
-	(List.map (fun xml -> focus_highlight highlight (aux_xml ~highlight xml)) lxml)
-      ^ "</li></ul>"
+       let lxml_coord =
+	 list_map_first
+	   (fun ~first xml -> if first then xml else coord @ xml)
+	   lxml in
+       let node = Block lxml_coord in
+       let node = if linestart then node else Indent [node] in
+       aux_node ~highlight ~linestart node
     | Block lxml ->
        String.concat ""
 		     (List.map
-			(fun xml -> div (focus_highlight highlight (aux_xml ~highlight xml)))
+			(fun xml -> div (focus_highlight highlight (aux_xml ~highlight ~linestart:true xml)))
 			lxml)
     | Indent xml ->
-       div ~classe:"indented" (focus_highlight highlight (aux_xml ~highlight xml))
+       div ~classe:"indented" (focus_highlight highlight (aux_xml ~highlight ~linestart:true xml))
     | Focus (focus,xml) ->
-      let html = aux_xml ~highlight xml in
+      let html = aux_xml ~highlight ~linestart xml in
       ( match focus_dico with
 	| None -> html
 	| Some focus_dico ->
@@ -251,13 +272,13 @@ let syntax ?(focus_dico : 'focus dico option)
 	   span ~id ~classe:"focus" html )
     | Highlight xml ->
        focus_highlight true
-	 (aux_xml ~highlight:true xml)
+	 (aux_xml ~highlight:true ~linestart xml)
     | Suspended xml ->
-      span ~classe:"suspended" (aux_xml ~highlight xml)
+      span ~classe:"suspended" (aux_xml ~highlight ~linestart xml)
     | ControlCurrentFocus ->
        focus_controls
     | DeleteIncr ->
        icon_delete ~title:"Remove element at focus" ()
   in
-  div (aux_xml ~highlight:false xml)
+  div (aux_xml ~highlight:false ~linestart:true xml)
 

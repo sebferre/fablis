@@ -1,4 +1,6 @@
 
+open Js_of_ocaml
+       
 type t = string
 
 type id = string

@@ -1,5 +1,5 @@
 
-
+open Js_of_ocaml
 
 open Js
 open Jsutils
@@ -25,12 +25,12 @@ object
     jquery (Html.selector_id id)
       (fun elt ->
         let html = Html.syntax ~focus_dico ~html_of_word xml in
-	elt##innerHTML <- string html;
+	elt##.innerHTML := string html;
 	stop_links_propagation_from elt;
 	jquery_all_from elt ".focus"
 	   (onclick (fun elt_foc ev ->
 	      Dom_html.stopPropagation ev;
-	      let key = to_string (elt_foc##id) in
+	      let key = to_string elt_foc##.id in
 	      let foc = focus_dico#get key in
 	      on_focus_change foc));
 	jquery_from elt "#focusup-current-focus"

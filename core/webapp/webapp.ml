@@ -1,4 +1,6 @@
 
+open Js_of_ocaml
+       
 open Js
 open Jsutils
 
@@ -57,9 +59,10 @@ let start
       ~(error_message : exn -> string)
     : unit =
   firebug "Starting!";
-  Dom_html.window##onload <-
+  Dom_html.window##.onload :=
     Dom.handler
       (fun ev ->
+       firebug "Loaded";
        let args = Url.Current.arguments in
        let lis = make_lis args in
        let p0 = lis#initial_place in
@@ -86,5 +89,6 @@ let start
        jquery "#button-refresh"
 	      (onclick (fun elt ev -> hist#present#abort; refresh ()));
        (* initial rendering *)
+       firebug "initial refresh";
        refresh ();
        bool true)

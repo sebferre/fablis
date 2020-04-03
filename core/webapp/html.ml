@@ -165,7 +165,10 @@ end
 
 (* generating HTML for Syntax.xml *)
 
-type input_update = string -> unit
+class input_update (f : string -> unit) =
+object
+  method call (s : string) = f s
+end
 type input_info =
   { input_type : string; (* text, checkbox, ... *)
     placeholder : string;

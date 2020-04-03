@@ -50,7 +50,7 @@ object
 	     let input_update = input_dico#get key in
 	     try
 	       elt_input##.style##.color := string "black";
-	       input_update (to_string elt_input##.value)
+	       input_update#call (to_string elt_input##.value)
 	     with _ ->
 	       elt_input##.style##.color := string "red";
 	       ()));

@@ -161,7 +161,7 @@ let float_of_input input : float option =
 let string_of_input input : string =
   to_string input##.value
 
-let file_js_of_input (input : #Dom_html.inputElement t) (k : (string * _ t) -> unit) : unit =
+let file_string_of_input (input : #Dom_html.inputElement t) (k : (string * string) -> unit) : unit =
   let open File in
   Optdef.iter
     input##.files
@@ -180,7 +180,7 @@ let file_js_of_input (input : #Dom_html.inputElement t) (k : (string * _ t) -> u
 		  Opt.case
 		    (CoerceTo.string reader##.result)
 		    (fun () -> alert "The file is not a valid JSON file")
-		    (fun s -> k (to_string (filename file), Json.unsafe_input s))
+		    (fun s -> k (to_string (filename file), to_string s)) (* Json.unsafe_input s)) *)
 	     );
 	     bool true);
 	reader##.onerror :=

@@ -165,9 +165,9 @@ end
 
 (* generating HTML for Syntax.xml *)
 
-class input_update (f : string -> unit) =
+class input_update (f : Dom_html.inputElement Js.t -> unit) =
 object
-  method call (s : string) = f s
+  method call (elt : Dom_html.inputElement Js.t) = f elt
 end
 type input_info =
   { input_type : string; (* text, checkbox, ... *)

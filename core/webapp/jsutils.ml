@@ -154,6 +154,43 @@ let integer_of_input ?(min = min_int) ?(max = max_int) input : int option =
     else Some n
   with _ -> None
 
+let float_of_input input : float option =
+  try Some (float_of_string (to_string input##.value))
+  with _ -> None
+
+let string_of_input input : string =
+  to_string input##.value
+
+let file_js_of_input (input : #Dom_html.inputElement t) (k : (string * _ t) -> unit) : unit =
+  let open File in
+  Optdef.iter
+    input##.files
+    (fun files ->
+     Opt.iter
+       (files##item 0)
+       (fun file ->
+	let reader = new%js fileReader in
+	reader##.onloadend :=
+	  Dom.handler
+	    (fun ev ->
+	     ( match reader##.readyState with
+	       | EMPTY -> alert "The file is empty"
+	       | LOADING -> assert false
+	       | DONE ->
+		  Opt.case
+		    (CoerceTo.string reader##.result)
+		    (fun () -> alert "The file is not a valid JSON file")
+		    (fun s -> k (to_string (filename file), Json.unsafe_input s))
+	     );
+	     bool true);
+	reader##.onerror :=
+	  Dom.handler
+	    (fun ev ->
+	     alert ("Error while reading file: error code " ^ string_of_int reader##.error##.code);
+	    bool true);
+	(* TODO: add progression bar *)
+	reader##readAsText file))
+    
 (* DOM utilities *)
 
 let getElementsByTagNameNS (elt : Dom.element t) (ns : js_string t) (name : js_string t) : Dom.element Dom.nodeList t =

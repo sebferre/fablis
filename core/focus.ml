@@ -1,4 +1,6 @@
 
+(* list contexts *)
+
 type 'a list_ctx = 'a list * 'a list 
 
 let list_of_ctx (x : 'a) (ll,rr : 'a list_ctx) : 'a list = List.rev ll @ x :: rr
@@ -29,10 +31,21 @@ let rec make_list (arity : int) (x : 'a) : 'a list =
   if arity = 0
   then []
   else x :: make_list (arity-1) x
-									
+
+(* focus paths *)
+		      
 type step = DOWN | RIGHT
 type path = step list
 
+exception Invalid_path
+		 
+let down_rights (n : int) : path =
+  let rec rights n =
+    if n < 0 then invalid_arg "Focus.down_rights"
+    else if n = 0 then []
+    else RIGHT :: rights (n-1) in
+  DOWN :: rights n
+		 
 let path_of_list_ctx (ll,rr) path =
   List.fold_left
     (fun path _ -> RIGHT::path)
@@ -48,7 +61,9 @@ let list_focus_of_path_list path lr =
   match lr with
   | [] -> assert false
   | x::rr -> aux path ([],rr) x
-			     
+
+(* transformation inputs *)
+		 
 class ['a] input (default : 'a) =
 object
   val mutable v : 'a = default

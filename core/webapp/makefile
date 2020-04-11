@@ -7,4 +7,4 @@ clean:
 .SUFFIXES: .ml .mli .cmo .cmi
 
 %.cmo: %.ml
-	ocamlfind ocamlc -I ../../core -package lwt -package js_of_ocaml -package js_of_ocaml-lwt -package js_of_ocaml-ppx -c $<
+	ocamlfind ocamlc -I ../../core -package yojson,lwt,js_of_ocaml,js_of_ocaml-lwt,js_of_ocaml-ppx -c $<

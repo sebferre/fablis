@@ -16,6 +16,12 @@ let prompt msg text = Dom_html.window##prompt (string msg) (string text)
 
 let firebug msg = Firebug.console##log (string msg)
 
+let trigger_download ~mime contents : unit =
+  let data_url = "data:" ^ mime ^ "," ^ Url.urlencode contents in
+  let _w_opt = Dom_html.window##open_ (string data_url) (string "_blank") null in
+  ()
+
+				     
 let jquery_from (root : #Dom_html.nodeSelector Js.t) s k =
   Opt.iter (root##querySelector (string s)) (fun elt ->
     k elt)

@@ -34,8 +34,8 @@ let rec make_list (arity : int) (x : 'a) : 'a list =
 
 (* focus paths *)
 		      
-type step = DOWN | RIGHT
-type path = step list
+type step = DOWN | RIGHT [@@deriving yojson]
+type path = step list [@@deriving yojson]
 
 exception Invalid_path
 		 

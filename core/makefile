@@ -7,4 +7,4 @@ clean:
 .SUFFIXES: .ml .mli .cmo .cmi
 
 %.cmo: %.ml
-	ocamlfind ocamlc -c $<
+	ocamlfind ocamlc -package yojson,ppx_deriving_yojson -c $<

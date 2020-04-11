@@ -4,7 +4,7 @@ open Js_of_ocaml
 open Js
 open Jsutils
 
-class ['place] history (p0 : 'place) =
+class ['lis,'place] history (lis : 'lis) (p0 : 'place) =
 object (self)
   constraint 'place = ('lis,'focus,'extent,'suggestion) Lis.place
 							
@@ -48,8 +48,19 @@ object (self)
 	 present <- p;
 	 future <- lp;
 	 true
+
+  method save_place : unit =
+    let json = present#json in
+    let contents = Yojson.Safe.to_string json in
+    let _ = Jsutils.trigger_download ~mime:"application/json" contents in
+    ()
+      
+  method open_place (json : Yojson.Safe.t) : unit =
+    let p = lis#place_of_json json in
+    self#push p
+
 end
-    
+   
 open Js
 open Jsutils
        
@@ -66,7 +77,7 @@ let start
        let args = Url.Current.arguments in
        let lis = make_lis args in
        let p0 = lis#initial_place in
-       let hist = new history p0 in
+       let hist = new history lis p0 in
        (* rendering-navigation loop *)
        let rec render_hist p =
 	 render_place p callback_hist
@@ -88,6 +99,20 @@ let start
 	      (onclick (fun elt ev -> if hist#forward then refresh ()));
        jquery "#button-refresh"
 	      (onclick (fun elt ev -> hist#present#abort; refresh ()));
+       (* save-load controls *)
+       jquery "#button-save"
+	      (onclick (fun elt ev -> hist#save_place; true));
+       jquery "#button-open"
+	      (onclick (fun elt ev -> jquery_click "#input-open"; true));
+       jquery_input
+	 "#input-open"
+	 (onchange (fun input ev ->
+		    Jsutils.file_string_of_input
+		      input
+		      (fun (filename,contents) ->
+		       let json = Yojson.Safe.from_string contents in
+		       hist#open_place json;
+		       refresh ())));
        (* initial rendering *)
        firebug "initial refresh";
        refresh ();

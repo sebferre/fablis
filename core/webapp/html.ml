@@ -21,7 +21,11 @@ let list_map_first (f : first:bool -> 'a -> 'b) (l : 'a list) : 'b list =
 let attr_opt name = function
   | None -> ""
   | Some id -> " " ^ name ^ "=\"" ^ id ^ "\""
-			     
+
+let bool_attr name = function
+  | false -> ""
+  | true -> " " ^ name
+					   
 let pre text =
   let text = Regexp.global_replace (Regexp.regexp "<") text "&lt;" in
   let text = Regexp.global_replace (Regexp.regexp ">") text "&gt;" in  
@@ -118,13 +122,19 @@ let ul ?id ?classe ?title items =
   Buffer.contents buf
 
 let input ?id ?classe ?title ?placeholder input_type =
-  "<input"
-  ^ attr_opt "id" id
-  ^ attr_opt "class" classe
-  ^ attr_opt "title" title
-  ^ attr_opt "type" (Some input_type)
-  ^ attr_opt "placeholder" placeholder
-  ^ ">"
+  let is_file = input_type="file" in
+  let html =
+    "<input"
+    ^ attr_opt "id" id
+    ^ attr_opt "class" classe
+    ^ attr_opt "title" title
+    ^ attr_opt "type" (Some input_type)
+    ^ attr_opt "placeholder" placeholder
+    ^ attr_opt "style" (if is_file then Some "display:none" else None)
+    ^ ">" in
+  if is_file
+  then "<label class=\"btn btn-default\">Choose..." ^ html ^ "</label>"
+  else html
 		  
 (* generic dictionary with automatic generation of keys *)
 

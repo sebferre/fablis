@@ -16,6 +16,11 @@ object
   method on_suggestion_selection f = on_suggestion_selection <- f
 								  
   method set_suggestions (lcol : string list) (llsugg : 'suggestion list list) : unit =
+    let select_suggestion elt =
+      let key = to_string elt##.id in
+      let sugg = sugg_dico#get key in
+      on_suggestion_selection sugg
+    in
     assert (List.length lcol = List.length llsugg);
     sugg_dico#clear;
     input_dico#clear;
@@ -43,28 +48,37 @@ object
 	 Html.div ~classe:"row"
 		  (String.concat "\n" lhtml) in
        elt##.innerHTML := string html;
-       stop_propagation_from elt ".suggestion-input";
+       stop_propagation_from elt ".suggestion-input, .suggestion-file-input";
+       (* input validation *)
        jquery_all_input_from elt ".suggestion-input"
 	  (oninput (fun elt_input ev ->
 	     let key = to_string elt_input##.id in
 	     let input_update = input_dico#get key in
 	     try
 	       elt_input##.style##.color := string "black";
-	       input_update#call elt_input
+	       input_update#call elt_input (fun () -> ())
+		  (* TODO: block suggestion selection until updated has terminated *)
 	     with _ ->
 	       elt_input##.style##.color := string "red";
 	       ()));
+       (* suggestion selection by clicking *)
        jquery_all_from elt ".suggestion"
 	  (onclick (fun elt_sugg ev ->
-	     let key = to_string elt_sugg##.id in
-	     let sugg = sugg_dico#get key in
-	     on_suggestion_selection sugg));
+	     select_suggestion elt_sugg));
+       (* suggestion selection by enter on input *)
        jquery_all_from elt ".suggestion-input"
 	  (onenter (fun input_elt ev ->
 	      jquery_ancestor ~classe:"suggestion" input_elt (fun ancestor_elt ->
-		let key = to_string ancestor_elt##.id in
-		let sugg = sugg_dico#get key in
-		on_suggestion_selection sugg))))
+		select_suggestion ancestor_elt)));
+       (* suggestion selection by file choosing *)
+       jquery_all_input_from elt ".suggestion-file-input"
+	  (onchange (fun elt_input ev ->
+	      let key = to_string elt_input##.id in
+	      let input_update = input_dico#get key in
+	      input_update#call elt_input
+		 (fun () ->
+		  jquery_ancestor ~classe:"suggestion" (elt_input :> Dom_html.element Js.t) (fun ancestor_elt ->
+		    select_suggestion ancestor_elt)))))
 
 end
   

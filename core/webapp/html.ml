@@ -121,20 +121,15 @@ let ul ?id ?classe ?title items =
   add "</ul>";
   Buffer.contents buf
 
-let input ?id ?classe ?title ?placeholder input_type =
-  let is_file = input_type="file" in
-  let html =
-    "<input"
-    ^ attr_opt "id" id
-    ^ attr_opt "class" classe
-    ^ attr_opt "title" title
-    ^ attr_opt "type" (Some input_type)
-    ^ attr_opt "placeholder" placeholder
-    ^ attr_opt "style" (if is_file then Some "display:none" else None)
-    ^ ">" in
-  if is_file
-  then "<label class=\"btn btn-default\">Choose..." ^ html ^ "</label>"
-  else html
+let input ?id ?classe ?title ?placeholder ?(hidden = false) input_type =
+  "<input"
+  ^ attr_opt "id" id
+  ^ attr_opt "class" classe
+  ^ attr_opt "title" title
+  ^ attr_opt "type" (Some input_type)
+  ^ attr_opt "placeholder" placeholder
+  ^ attr_opt "style" (if hidden then Some "display:none" else None)
+  ^ ">"
 		  
 (* generic dictionary with automatic generation of keys *)
 
@@ -175,7 +170,7 @@ end
 
 (* generating HTML for Syntax.xml *)
 
-class input_update (f : Dom_html.inputElement Js.t -> unit) =
+class input_update (f : Dom_html.inputElement Js.t -> (unit -> unit) -> unit) =
 object
   method call (elt : Dom_html.inputElement Js.t) = f elt
 end
@@ -252,7 +247,19 @@ let syntax ?(focus_dico : 'focus dico option)
 	 | Some input_dico, Some html_info_of_input ->
 	    let info = html_info_of_input i in
 	    let key = input_dico#add info.input_update in
-	    input ~id:key ~classe:"suggestion-input" ~placeholder:info.placeholder info.input_type )
+	    let is_file = info.input_type = "file" in
+	    let html_input =
+	      input ~id:key
+		    ~classe:(if is_file
+			     then "suggestion-file-input"
+			     else "suggestion-input")
+		    ~placeholder:info.placeholder
+		    ~hidden:is_file
+		    info.input_type in
+	    if is_file
+	    then "<label class=\"btn btn-default\">Choose..." ^ html_input ^ "</label>"
+	    else html_input
+       )
     | Selection xml_selop -> aux_xml ~highlight ~linestart xml_selop
     | Suffix (xml,suf) ->
        aux_xml ~highlight ~linestart xml ^ suf

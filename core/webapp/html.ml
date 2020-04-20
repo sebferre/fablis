@@ -257,7 +257,7 @@ let syntax ?(focus_dico : 'focus dico option)
 		    ~hidden:is_file
 		    info.input_type in
 	    if is_file
-	    then "<label class=\"btn btn-default\">Choose..." ^ html_input ^ "</label>"
+	    then "<label class=\"suggestion-file-label btn btn-default\">Choose..." ^ html_input ^ "</label>"
 	    else html_input
        )
     | Selection xml_selop -> aux_xml ~highlight ~linestart xml_selop

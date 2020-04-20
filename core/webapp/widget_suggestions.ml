@@ -48,7 +48,7 @@ object
 	 Html.div ~classe:"row"
 		  (String.concat "\n" lhtml) in
        elt##.innerHTML := string html;
-       stop_propagation_from elt ".suggestion-input, .suggestion-file-input";
+       stop_propagation_from elt ".suggestion-input, .suggestion-file-label";
        (* input validation *)
        jquery_all_input_from elt ".suggestion-input"
 	  (oninput (fun elt_input ev ->

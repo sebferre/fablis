@@ -59,6 +59,11 @@ object (self)
     let p = lis#place_of_json json in
     self#push p
 
+  method save_results : unit =
+    let mime, contents = present#results in
+    let _ = Jsutils.trigger_download ~mime contents in
+    ()
+
 end
    
 open Js
@@ -99,7 +104,7 @@ let start
 	      (onclick (fun elt ev -> if hist#forward then refresh ()));
        jquery "#button-refresh"
 	      (onclick (fun elt ev -> hist#present#abort; refresh ()));
-       (* save-load controls *)
+       (* query save-load controls *)
        jquery "#button-save"
 	      (onclick (fun elt ev -> hist#save_place; true));
        jquery "#button-open"
@@ -113,6 +118,9 @@ let start
 		       let json = Yojson.Safe.from_string contents in
 		       hist#open_place json;
 		       refresh ())));
+       (* results save control *)
+       jquery "#button-save-results"
+	      (onclick (fun elt ev -> hist#save_results; true));
        (* initial rendering *)
        firebug "initial refresh";
        refresh ();

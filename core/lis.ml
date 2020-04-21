@@ -13,6 +13,7 @@ object
   method virtual activate : 'suggestion -> ('lis,'focus,'extent,'suggestion) place option
   method virtual abort : unit (* abort any ongoing computation in that place *)
   method virtual json : Yojson.Safe.t (* JSON representation of the place *)
+  method virtual results : string * string (* mime, contents *)
 end
 
 class virtual ['place] lis =

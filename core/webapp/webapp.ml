@@ -90,9 +90,11 @@ let start
 	 try
 	   render_hist p;
 	   if push_in_history then hist#push p else hist#replace p
-	 with exn ->
-	   alert (error_message exn);
-	   render_hist hist#present (* recovering from error *)
+	 with
+	 | Error js_error -> Firebug.console##error js_error
+	 | exn ->
+	    alert (error_message exn);
+	    render_hist hist#present (* recovering from error *)
        in
        (* navigation controls *)
        let refresh () = render_hist hist#present in

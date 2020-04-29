@@ -3,10 +3,12 @@
 
 type 'a list_ctx = 'a list * 'a list 
 
-let list_of_ctx (x : 'a) (ll,rr : 'a list_ctx) : 'a list = List.rev ll @ x :: rr
+let list_of_ctx (x : 'a) (ll,rr : 'a list_ctx) : 'a list = List.rev_append ll (x :: rr)
 
-let list_of_ctx_many (lx : 'a list) (ll, rr : 'a list_ctx) : 'a list = List.rev ll @ lx @ rr
-								
+let list_of_ctx_many (lx : 'a list) (ll, rr : 'a list_ctx) : 'a list = List.rev_append ll (lx @ rr)
+
+let list_of_ctx_none (ll, rr : 'a list_ctx) : 'a list = List.rev_append ll rr
+											    
 let ctx_of_list (lr : 'a list) : ('a * 'a list_ctx) list =
   let rec aux ll = function
     | [] -> []

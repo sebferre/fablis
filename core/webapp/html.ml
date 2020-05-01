@@ -9,12 +9,14 @@ let selector_id id = "#" ^ id
 
 (* general utilities *)
 
+let list_map f l = List.rev (List.rev_map f l)
+			     
 let list_map_first (f : first:bool -> 'a -> 'b) (l : 'a list) : 'b list =
-  let rec aux ~first = function
-    | [] -> []
-    | x::r -> f ~first x :: aux ~first:false r
+  let rec aux ~first acc = function
+    | [] -> acc
+    | x::r -> aux ~first:false (f ~first x :: acc) r
   in
-  aux ~first:true l
+  List.rev (aux ~first:true [] l)
 			     
 (* utilities for generating HTML *)
 
@@ -213,28 +215,30 @@ let syntax ?(focus_dico : 'focus dico option)
 	   ~(html_of_word : 'word -> t)
 	   ?(html_info_of_input : ('input -> input_info) option)
 	   (xml : ('word,'input,'focus) Syntax.xml) : t =
-  let rec aux_xml ~highlight ~linestart xml =
+  let rec aux_xml ~highlight ~linestart ?(buf = Buffer.create 1001) xml =
     let open Syntax in
     match xml with
     | Enum (sep,lxml) :: ControlCurrentFocus :: xml ->
-       aux_xml ~highlight ~linestart (Enum (sep, append_node_to_xml_list ControlCurrentFocus lxml) :: xml)
+       aux_xml ~highlight ~linestart ~buf (Enum (sep, append_node_to_xml_list ControlCurrentFocus lxml) :: xml)
     | Coord (coord,lxml) :: ControlCurrentFocus :: xml ->
-       aux_xml ~highlight ~linestart (Coord (coord, append_node_to_xml_list ControlCurrentFocus lxml) :: xml)
+       aux_xml ~highlight ~linestart ~buf (Coord (coord, append_node_to_xml_list ControlCurrentFocus lxml) :: xml)
     | Block lxml :: ControlCurrentFocus :: xml ->
-       aux_xml ~highlight ~linestart (Block (append_node_to_xml_list ControlCurrentFocus lxml) :: xml)
+       aux_xml ~highlight ~linestart ~buf (Block (append_node_to_xml_list ControlCurrentFocus lxml) :: xml)
     | Indent xml1 :: ControlCurrentFocus :: xml ->
-       aux_xml ~highlight ~linestart (Indent (xml1 @ [ControlCurrentFocus]) :: xml)
+       aux_xml ~highlight ~linestart ~buf (Indent (xml1 @ [ControlCurrentFocus]) :: xml)
     | Focus (foc,xml1) :: ControlCurrentFocus :: xml ->
-       aux_xml ~highlight ~linestart (Focus (foc, append_node_to_xml ControlCurrentFocus xml1) :: xml)
+       aux_xml ~highlight ~linestart ~buf (Focus (foc, append_node_to_xml ControlCurrentFocus xml1) :: xml)
     | Highlight xml1 :: ControlCurrentFocus :: xml ->
-       aux_xml ~highlight ~linestart (Highlight (append_node_to_xml ControlCurrentFocus xml1) :: xml)
+       aux_xml ~highlight ~linestart ~buf (Highlight (append_node_to_xml ControlCurrentFocus xml1) :: xml)
     | Focus (foc1, xml1) :: Focus (foc2, xml2) :: xml when foc1 = foc2 ->
-       aux_xml ~highlight ~linestart (Focus (foc1, xml1 @ xml2) :: xml)
+       aux_xml ~highlight ~linestart ~buf (Focus (foc1, xml1 @ xml2) :: xml)
     | Highlight xml1 :: Highlight xml2 :: xml ->
-       aux_xml ~highlight ~linestart (Highlight (xml1 @ xml2) :: xml)
+       aux_xml ~highlight ~linestart ~buf (Highlight (xml1 @ xml2) :: xml)
     | node :: xml ->
-       aux_node ~highlight ~linestart node ^ (if xml=[] then "" else " " ^ aux_xml ~highlight ~linestart:false xml)
-    | [] -> ""
+       Buffer.add_string buf (aux_node ~highlight ~linestart node);
+       Buffer.add_string buf (if xml=[] then "" else " ");
+       aux_xml ~highlight ~linestart:false ~buf xml
+    | [] -> Buffer.contents buf
   and aux_node ~highlight ~linestart node = 
     let open Syntax in
     match node with
@@ -280,7 +284,7 @@ let syntax ?(focus_dico : 'focus dico option)
        aux_node ~highlight ~linestart node
     | Block lxml ->
        String.concat ""
-		     (List.map
+		     (list_map
 			(fun xml -> div (focus_highlight highlight (aux_xml ~highlight ~linestart:true xml)))
 			lxml)
     | Indent xml ->

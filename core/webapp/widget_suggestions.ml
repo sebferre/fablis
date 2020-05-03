@@ -75,7 +75,7 @@ object
 				    (fun ancestor_elt -> select_suggestion ancestor_elt)));
        (* suggestion selection by selecting *)
        jquery_all_select_from elt ".suggestion-select"
-	  (oninput (fun select_elt ev ->
+	  (oninput (fun (select_elt : Dom_html.selectElement Js.t) ev ->
 		     let key = to_string select_elt##.id in
 		     match input_dico#get key with
 		     | SelectElt { input_update } ->
@@ -87,7 +87,7 @@ object
 	      let key = to_string elt_input##.id in
 	      let input_info = input_dico#get key in
 	      match input_info with
-	      | InputElt { input_update } ->
+	      | FileElt { input_update } ->
 		 input_update#call elt_input
 		   (fun () ->
 		    jquery_ancestor ~classe:"suggestion" (elt_input :> Dom_html.element Js.t)

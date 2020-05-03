@@ -184,23 +184,69 @@ end
 
 (* generating HTML for Syntax.xml *)
 
-class ['elt] input_update (f : 'elt Js.t -> (unit -> unit) -> unit) =
-object
-  method call (elt : 'elt Js.t) = f elt
+type 'a input_update_function = 'a -> (unit -> unit) -> unit
+class ['a] input_update (f : 'a input_update_function) =
+object (* needs to be a class to allow for comparison (data structures) *)
+  method call (elt : 'a) = f elt
 end
 type input_info =
   | InputElt of
       { input_type : string; (* text, checkbox, ... *)
 	placeholder : string;
-	input_update : Dom_html.inputElement input_update }
+	input_update : Dom_html.inputElement Js.t input_update }
+  | FileElt of
+      { input_update : Dom_html.inputElement Js.t input_update }
   | SelectElt of
       { values : string list;
-	input_update : Dom_html.selectElement input_update }
+	input_update : Dom_html.selectElement Js.t input_update }
 
-let inputElt_info input_type placeholder f =
-  InputElt { input_type; placeholder; input_update = new input_update f }
-let selectElt_info values f =
-  SelectElt { values; input_update = new input_update f }
+let inputElt_info input_type placeholder (lift : Dom_html.inputElement Js.t -> ('a -> unit) -> unit) (f : 'a input_update_function) : input_info =
+  InputElt
+    { input_type;
+      placeholder;
+      input_update =
+	new input_update
+	    (fun input_elt k -> lift input_elt (fun i -> f i k)) }
+let int_info (f : int input_update_function) : input_info =
+  inputElt_info
+    "number" "0"
+    (fun input_elt k ->
+     Jsutils.integer_of_input input_elt
+     |> Option.iter k)
+    f
+let float_info (f : float input_update_function) : input_info =
+  inputElt_info
+    "number" "0.0e+0"
+    (fun input_elt k ->
+     Jsutils.float_of_input input_elt
+     |> Option.iter k)
+    f
+let string_info (f : string input_update_function) : input_info =
+  inputElt_info
+    "text" ""
+    (fun input_elt k ->
+     Jsutils.string_of_input input_elt
+     |> k)
+    f
+    
+let fileElt_info (f : (string * string) input_update_function) : input_info =
+  FileElt
+    { input_update =
+	new input_update
+	    (fun input_elt k ->
+	     Jsutils.file_string_of_input
+	       input_elt
+	       (fun filename_contents -> f filename_contents k)) }
+		
+	  
+let selectElt_info (values : string list) (f : string input_update_function) : input_info =
+  SelectElt
+    { values;
+      input_update =
+	new input_update
+	    (fun select_elt k ->
+	     Jsutils.string_of_select select_elt
+	     |> (fun s -> f s k)) }
 
 type input_dico = input_info dico
 				
@@ -226,18 +272,17 @@ let focus_controls =
 
 let html_of_input_info key : input_info -> t = function
   | InputElt { input_type; placeholder; input_update } ->
-     let is_file = input_type = "file" in
+     input ~id:key
+	   ~classe:"suggestion-input"
+	   ~placeholder
+	   input_type
+  | FileElt { input_update } ->
      let html_input =
        input ~id:key
-	     ~classe:(if is_file
-		      then "suggestion-file-input"
-		      else "suggestion-input")
-	     ~placeholder
-	     ~hidden:is_file
-	     input_type in
-     if is_file
-     then "<label class=\"suggestion-file-label btn btn-default\">Choose..." ^ html_input ^ "</label>"
-     else html_input
+	     ~classe:"suggestion-file-input"
+	     ~hidden:true
+	     "file" in
+     "<label class=\"suggestion-file-label btn btn-default\">Choose..." ^ html_input ^ "</label>"
   | SelectElt { values; input_update } ->
      select ~id:key ~classe:"suggestion-select" values
 		

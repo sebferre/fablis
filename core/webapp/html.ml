@@ -132,7 +132,19 @@ let input ?id ?classe ?title ?placeholder ?(hidden = false) input_type =
   ^ attr_opt "placeholder" placeholder
   ^ attr_opt "style" (if hidden then Some "display:none" else None)
   ^ ">"
-		  
+
+let select ?id ?classe ?title values =
+  "<select"
+  ^ attr_opt "id" id
+  ^ attr_opt "class" classe
+  ^ attr_opt "title" title
+  ^ ">"
+  ^ String.concat ""
+		  (List.map
+		     (fun v -> "<option value=\"" ^ v ^ "\">" ^ v ^ "</option>")
+		     values)
+  ^ "</select>"
+      
 (* generic dictionary with automatic generation of keys *)
 
 class ['a] dico (prefix : string) =
@@ -172,16 +184,25 @@ end
 
 (* generating HTML for Syntax.xml *)
 
-class input_update (f : Dom_html.inputElement Js.t -> (unit -> unit) -> unit) =
+class ['elt] input_update (f : 'elt Js.t -> (unit -> unit) -> unit) =
 object
-  method call (elt : Dom_html.inputElement Js.t) = f elt
+  method call (elt : 'elt Js.t) = f elt
 end
 type input_info =
-  { input_type : string; (* text, checkbox, ... *)
-    placeholder : string;
-    input_update : input_update;
-  }
-type input_dico = input_update dico
+  | InputElt of
+      { input_type : string; (* text, checkbox, ... *)
+	placeholder : string;
+	input_update : Dom_html.inputElement input_update }
+  | SelectElt of
+      { values : string list;
+	input_update : Dom_html.selectElement input_update }
+
+let inputElt_info input_type placeholder f =
+  InputElt { input_type; placeholder; input_update = new input_update f }
+let selectElt_info values f =
+  SelectElt { values; input_update = new input_update f }
+
+type input_dico = input_info dico
 				
 let focus_highlight h xml =
   if h
@@ -202,7 +223,24 @@ let focus_controls =
   icon_focusup ~id:"focusup-current-focus" ~title:"Move focus up" ()
   ^ icon_delete ~id:"delete-current-focus" ~title:"Delete current focus" ()
 (* ^ focus_dropdown *) (* TODO *)
-	    
+
+let html_of_input_info key : input_info -> t = function
+  | InputElt { input_type; placeholder; input_update } ->
+     let is_file = input_type = "file" in
+     let html_input =
+       input ~id:key
+	     ~classe:(if is_file
+		      then "suggestion-file-input"
+		      else "suggestion-input")
+	     ~placeholder
+	     ~hidden:is_file
+	     input_type in
+     if is_file
+     then "<label class=\"suggestion-file-label btn btn-default\">Choose..." ^ html_input ^ "</label>"
+     else html_input
+  | SelectElt { values; input_update } ->
+     select ~id:key ~classe:"suggestion-select" values
+		
 let append_node_to_xml node xml =
   List.rev (node :: List.rev xml)
 let append_node_to_xml_list node lxml =
@@ -250,19 +288,8 @@ let syntax ?(focus_dico : 'focus dico option)
 	 | _, None -> failwith "Html.syntax: unexpected input"
 	 | Some input_dico, Some html_info_of_input ->
 	    let info = html_info_of_input i in
-	    let key = input_dico#add info.input_update in
-	    let is_file = info.input_type = "file" in
-	    let html_input =
-	      input ~id:key
-		    ~classe:(if is_file
-			     then "suggestion-file-input"
-			     else "suggestion-input")
-		    ~placeholder:info.placeholder
-		    ~hidden:is_file
-		    info.input_type in
-	    if is_file
-	    then "<label class=\"suggestion-file-label btn btn-default\">Choose..." ^ html_input ^ "</label>"
-	    else html_input
+	    let key = input_dico#add info in
+	    html_of_input_info key info
        )
     | Selection xml_selop -> aux_xml ~highlight ~linestart xml_selop
     | Suffix (xml,suf) ->

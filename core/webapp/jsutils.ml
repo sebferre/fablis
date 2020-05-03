@@ -56,6 +56,15 @@ let jquery_all_input_from (root : #Dom_html.nodeSelector Js.t) s k =
 	k input))
   done
 
+let jquery_all_select_from (root : #Dom_html.nodeSelector Js.t) s k =
+  let nodelist = root##querySelectorAll (string s) in
+  let n = nodelist##.length in
+  for i=0 to n-1 do
+    Opt.iter (nodelist##item i) (fun elt ->
+      Opt.iter (Dom_html.CoerceTo.select elt) (fun input ->
+	k input))
+  done
+
 let jquery_parent elt k =
   Opt.iter elt##.parentNode (fun node ->
     Opt.iter (Dom.CoerceTo.element node) (fun parent ->
@@ -196,6 +205,10 @@ let file_string_of_input (input : #Dom_html.inputElement t) (k : (string * strin
 	    bool true);
 	(* TODO: add progression bar *)
 	reader##readAsText file))
+
+let string_of_select (select : Dom_html.selectElement Js.t) : string =
+  to_string select##.value
+
     
 (* DOM utilities *)
 

@@ -378,5 +378,6 @@ let syntax ?(focus_dico : 'focus dico option)
     | DeleteIncr ->
        icon_delete ~title:"Remove element at focus" ()
   in
-  div (aux_xml ~highlight:false ~linestart:true xml)
+  span ~classe:"syntax"
+       (aux_xml ~highlight:false ~linestart:true xml)
 

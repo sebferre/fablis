@@ -4,12 +4,30 @@
 
 type freq = { value : int; partial : bool }
 	      
+type 'suggestion tree =
+  [ `Dir of string * 'suggestion forest
+  | `Sugg of 'suggestion ]
+ and 'suggestion forest = 'suggestion tree list  
+				  
+let rec insert_suggestion (path : string list) (sugg : 'suggestion) (forest : 'suggestion forest) : 'suggestion forest =
+  match path with
+  | [] -> forest @ [`Sugg sugg]
+  | dir::path1 -> insert_suggestion_aux dir path1 sugg forest
+and insert_suggestion_aux dir path1 sugg forest =
+  match forest with
+  | [] ->
+     [`Dir (dir, insert_suggestion path1 sugg [])]
+  | `Dir (dir0, forest0) :: forest1 when dir0=dir ->
+     `Dir (dir0, insert_suggestion path1 sugg forest0) :: forest1
+  | tree0 :: forest1 ->
+     tree0 :: insert_suggestion_aux dir path1 sugg forest1
+				      
 class virtual ['lis,'focus,'extent,'suggestion] place (lis : 'lis) (focus : 'focus) =
 object
   method lis = lis
   method focus = focus
 
-  method virtual eval : ('extent -> unit) -> ('suggestion list list -> unit) -> unit
+  method virtual eval : ('extent -> unit) -> ('suggestion forest list -> unit) -> unit
   method virtual activate : 'suggestion -> ('lis,'focus,'extent,'suggestion) place option
   method virtual abort : unit (* abort any ongoing computation in that place *)
   method virtual json : Yojson.Safe.t (* JSON representation of the place *)

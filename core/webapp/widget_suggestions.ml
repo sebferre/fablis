@@ -15,35 +15,52 @@ object
   val mutable on_suggestion_selection : 'suggestion -> unit = fun sugg -> ()
   method on_suggestion_selection f = on_suggestion_selection <- f
 								  
-  method set_suggestions (lcol : string list) (llsugg : 'suggestion list list) : unit =
+  method set_suggestions (lcol : string list) (lfsugg : 'suggestion Lis.forest list) : unit =
+    let cpt = ref 0 in (* counter for collapsable dirs *)
     let select_suggestion elt =
       let key = to_string elt##.id in
       let sugg = sugg_dico#get key in
-      on_suggestion_selection sugg
+      on_suggestion_selection sugg in
+    let rec html_forest fsugg =
+      Html.ul
+	(List.map
+	   (fun tree ->
+	    match tree with
+	    | `Sugg sugg ->
+	       let key : string = sugg_dico#add sugg in
+	       let html_sugg = html_of_suggestion ~input_dico sugg in
+	       let html =
+		 "<label style=\"visibility:hidden;\">►&nbsp;</label>"
+		 ^ html_sugg in
+	       (Some key, Some "suggestion", None, html)
+	    | `Dir (dir,children) ->
+	       let check_id =
+		 incr cpt; "collapse-suggdir-" ^ string_of_int !cpt in
+	       let html =
+		 "<input class=\"input-treeview\" type=\"checkbox\" id=\"" ^ check_id ^ "\">"
+		 ^ "<label for=\"" ^ check_id ^ "\" class=\"label-checked\">▼&nbsp;</label>"
+		 ^ "<label for=\"" ^ check_id ^ "\" class=\"label-unchecked\">►&nbsp;</label>"
+		 ^ Html.span ~classe:"suggestion-dir" dir
+		 ^ html_forest children in
+	       (None, None, None, html))
+	   fsugg)
     in
-    assert (List.length lcol = List.length llsugg);
+    assert (List.length lcol = List.length lfsugg);
     sugg_dico#clear;
     input_dico#clear;
     jquery (Html.selector_id id)
       (fun elt ->
        let lhtml =
 	 List.map2
-	   (fun col lsugg ->
+	   (fun col fsugg ->
 	    Html.div
 	      ~classe:(col ^ " column-suggestions")
 	      (Html.div
 		 ~classe:"panel panel-default panel-suggestions"
 		 (Html.div
 		    ~classe:"panel-body list-suggestions css-treeview"
-		    (Html.ul
-		       (List.map
-			  (fun sugg ->
-
-			   let key : string = sugg_dico#add sugg in
-			   let html_sugg = html_of_suggestion ~input_dico sugg in
-			   (Some key, Some "suggestion", None, html_sugg))
-			  lsugg)))))
-	   lcol llsugg in
+		    (html_forest fsugg))))
+	   lcol lfsugg in
        let html =
 	 Html.div ~classe:"row"
 		  (String.concat "\n" lhtml) in

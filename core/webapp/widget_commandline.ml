@@ -46,6 +46,7 @@ object (self)
           let html =
             Html.input
               ~title:"Enter a short command for selecting a suggestion"
+              ~classe:"commandline-input"
               "text" in
           elt##.innerHTML := string html;
           jquery_input_from elt "input"
@@ -55,9 +56,17 @@ object (self)
                  let best_score, lsugg =
                    self#best_match_suggestions cmd in
                  match lsugg with
-                 | [] -> Jsutils.alert "The command was not understood"
-                 | [sugg] -> on_suggestion_selection sugg
-                 | _ -> Jsutils.alert "The command is ambiguous"));
+                 | [] -> (* The command was not understood *)
+                    input##.style##.color := string "red"
+                 | [sugg] ->
+                    on_suggestion_selection sugg
+                 | _ -> (* The command is ambiguous *)
+                    input##.style##.color := string "orange"
+            ));
+          jquery_input_from elt "input"
+            (oninput
+               (fun input ev ->
+                 input##.style##.color := string "black"));
           initialized <- true)
 
   method selected_suggestion sugg =

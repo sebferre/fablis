@@ -19,8 +19,26 @@ object (self)
 
   val mutable initialized = false
   val mutable on_suggestion_selection : 'suggestion -> unit = fun sugg -> ()
-  val dico_sugg : (string, 'suggestion) Hashtbl.t = Hashtbl.create 103
+  val mutable current_suggestions : 'suggestion Lis.forest list = []
 
+  method private best_match_suggestions (cmd : string) : score * 'suggestion list =
+    let rec aux res fsugg =
+      List.fold_left
+        (fun (best_score,lsugg as res) ->
+          function
+          | `Sugg sugg ->
+             let score = score_of_suggestion sugg cmd in
+             if score > best_score then
+               (score, [sugg])
+             else if score > 0. && score = best_score then
+               (best_score, sugg::lsugg)
+             else res
+          | `Dir (dir,children) ->
+             aux res children)
+        res fsugg
+    in
+    List.fold_left aux (0.,[]) current_suggestions
+                                                                
   method private init =
     if not initialized then
       jquery (Html.selector_id id)
@@ -34,11 +52,12 @@ object (self)
             (onenter
                (fun input ev ->
                  let cmd = to_string input##.value in
-                 try
-                   let sugg = Hashtbl.find dico_sugg cmd in
-                   on_suggestion_selection sugg
-                 with Not_found ->
-                   Jsutils.alert "Command not understood"));
+                 let best_score, lsugg =
+                   self#best_match_suggestions cmd in
+                 match lsugg with
+                 | [] -> Jsutils.alert "The command was not understood"
+                 | [sugg] -> on_suggestion_selection sugg
+                 | _ -> Jsutils.alert "The command is ambiguous"));
           initialized <- true)
 
   method selected_suggestion sugg =
@@ -52,19 +71,7 @@ object (self)
 
   method set_suggestions (lfsugg : 'suggestion Lis.forest list) : unit =
     self#init;
-    Hashtbl.clear dico_sugg;
-    let rec process_forest fsugg =
-      List.iter
-        (function
-         | `Sugg sugg ->
-            let cmd = command_of_suggestion sugg in
-            if cmd <> "" then
-              Hashtbl.add dico_sugg cmd sugg
-         | `Dir (dir,children) ->
-            process_forest children)
-        fsugg
-    in
-    List.iter process_forest lfsugg
+    current_suggestions <- lfsugg
         
 end
   

@@ -123,6 +123,27 @@ let start
        (* results save control *)
        jquery "#button-save-results"
 	      (onclick (fun elt ev -> hist#save_results; true));
+       (* shortcut keys for navigation *)
+       jquery_document
+         (onkeydown (fun elt ev ->
+              if to_bool ev##.ctrlKey then
+                ( match ev##.keyCode with
+                | 36 (* Home *) ->
+                   hist#home; refresh ()
+                | 37 (* ArrowLeft *) ->
+                   if hist#back then refresh ()
+                | 39 (* ArrowRight *) ->
+                   if hist#forward then refresh ()
+                | _ -> () )
+              (*else
+                ( match ev##.keyCode with
+                | 37 (* ArrowLeft *) ->
+                | 38 (* ArrowUp *) ->
+                | 39 (* ArrowRight *) ->
+                | 40 (* ArrowDown *) ->
+                | 46 (* Delete *) ->
+                | _ -> () )*)
+         ));
        (* initial rendering *)
        firebug "initial refresh";
        refresh ();

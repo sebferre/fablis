@@ -23,6 +23,8 @@ let trigger_download ~mime contents : unit =
   let _w_opt = Dom_html.window##open_ (string data_url) (string "_blank") null in
   ()
 
+let jquery_document k =
+  k Dom_html.document
 				     
 let jquery_from (root : #Dom_html.nodeSelector Js.t) s k =
   Opt.iter (root##querySelector (string s)) (fun elt ->

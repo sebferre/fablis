@@ -68,10 +68,13 @@ end
    
 open Js
 open Jsutils
-       
+
+type 'place handler = push_in_history:bool -> 'place -> unit
+   
 let start
       ~(make_lis : (string * string) list -> 'place #Lis.lis)
-      ~(render_place : 'place -> (push_in_history:bool -> 'place -> unit) -> unit)
+      ~(render_place : 'place -> 'place handler -> unit)
+      ~(handle_document_keydown : Dom_html.keyboardEvent Js.t -> 'place -> 'place handler -> bool) (* returns true if event was handled *)
       ~(error_message : exn -> string)
     : unit =
   firebug "Starting!";
@@ -126,7 +129,8 @@ let start
        (* shortcut keys for navigation *)
        jquery_document
          (onkeydown (fun elt ev ->
-              if to_bool ev##.ctrlKey then
+              if handle_document_keydown ev hist#present callback_hist then ()
+              else if to_bool ev##.ctrlKey then
                 ( match ev##.keyCode with
                 | 36 (* Home *) ->
                    hist#home; refresh ()
@@ -135,14 +139,7 @@ let start
                 | 39 (* ArrowRight *) ->
                    if hist#forward then refresh ()
                 | _ -> () )
-              (*else
-                ( match ev##.keyCode with
-                | 37 (* ArrowLeft *) ->
-                | 38 (* ArrowUp *) ->
-                | 39 (* ArrowRight *) ->
-                | 40 (* ArrowDown *) ->
-                | 46 (* Delete *) ->
-                | _ -> () )*)
+              else ()
          ));
        (* initial rendering *)
        firebug "initial refresh";

@@ -56,12 +56,12 @@ let path_of_list_ctx (ll,rr) path =
 let list_focus_of_path_list path lr =
   let rec aux path (ll,rr) x =
     match path, rr with
-    | RIGHT::_, [] -> assert false
+    | RIGHT::_, [] -> raise Invalid_path
     | RIGHT::path1, y::rr1 -> aux path1 (x::ll,rr1) y
     | _ -> path, (ll,rr), x
   in
   match lr with
-  | [] -> assert false
+  | [] -> raise Invalid_path
   | x::rr -> aux path ([],rr) x
 
 (* transformation inputs *)

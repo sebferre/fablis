@@ -22,6 +22,7 @@ let list_map_first (f : first:bool -> 'a -> 'b) (l : 'a list) : 'b list =
 
 let attr_opt name = function
   | None -> ""
+  | Some "" -> " " ^ name
   | Some id -> " " ^ name ^ "=\"" ^ id ^ "\""
 
 let bool_attr name = function
@@ -47,8 +48,12 @@ let div ?id ?classe ?title text =
   ^ attr_opt "title" title
   ^ ">" ^ text ^ "</div>"
 
-let a url html =
-  "<a target=\"_blank\" href=\"" ^ url ^ "\">" ^ html ^ "</a>"
+let a url ?(target = Some "_blank") ?download html =
+  "<a"
+  ^ attr_opt "target" target
+  ^ attr_opt "download" download
+  ^ " href=\"" ^ url ^ "\">"
+  ^ html ^ "</a>"
 
 let img ?id ?classe ?height ~alt ~title url =
   "<img"

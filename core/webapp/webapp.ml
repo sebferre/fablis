@@ -52,7 +52,7 @@ object (self)
   method save_place : unit =
     let json = present#json in
     let contents = Yojson.Safe.to_string json in
-    let _ = Jsutils.trigger_download ~mime:"application/json" contents in
+    let _ = Jsutils.trigger_download ~mime:"application/x-json-stream" contents in
     ()
       
   method open_place (json : Yojson.Safe.t) : unit =

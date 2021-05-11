@@ -1,8 +1,7 @@
-(*
-  Copyright 2013-2017 Sébastien Ferré, IRISA, Université de Rennes 1
-
-  This file is part of Sparklis.
-*)
+(**
+   Utilities related to JavaScript for accessing the DOM and browser.
+   @author Sébastien Ferré (ferre AT irisa DOT fr)
+ *)
 
 open Js_of_ocaml
 open Js_of_ocaml_lwt
@@ -10,6 +9,7 @@ open Js_of_ocaml_lwt
 open Js
 open XmlHttpRequest
 
+(** Displays an alert message in the browser. *)
 let alert msg = Dom_html.window##alert (string msg)
 
 let prompt msg text = Dom_html.window##prompt (string msg) (string text)
@@ -236,164 +236,3 @@ struct
   let array ar = Unsafe.inject (array ar)
   let obj ar = Unsafe.obj ar
 end
-
-  
-(* YASGUI bindings *)
-
-let opt_iter (opt : 'a option) (k : 'a -> unit) : unit =
-  match opt with
-  | Some x -> k x
-  | None -> ()
-    
-let yasgui =
-object (self)
-  val mutable this_opt = None
-
-  method init =
-    try
-      let constr_YASGUI = Unsafe.global##.YASGUI in
-      this_opt <- Some (new%js constr_YASGUI (Dom_html.getElementById "sparklis-yasgui"))
-    with exn ->
-      firebug ("yasgui#init: " ^ Printexc.to_string exn);
-      alert ("Warning: YASGUI could not be initialized for some reason. SPARQL queries will be displayed only as text.");
-      this_opt <- None
-
-  method set_corsProxy (url_opt : string option) : unit =
-    match this_opt with
-    | None -> ()
-    | Some yasgui -> yasgui##.options##.api##.corsProxy := (match url_opt with None -> null | Some url -> some (string url))
-
-  method private yasqe yasgui = (yasgui##current ())##.yasqe
-  method private yasr yasgui = (yasgui##current ())##.yasr
-
-  method set_endpoint (endpoint : string) : unit =
-    match this_opt with
-    | None -> ()
-    | Some yasgui ->
-      let yasqe = self#yasqe yasgui in
-      yasqe##.options##.sparql##.endpoint := string endpoint;
-      jquery_set_innerHTML ".yasgui .endpointText .item" endpoint
-
-  method set_requestMethod (meth : [`GET | `POST]) : unit =
-    match this_opt with
-    | None -> ()
-    | Some yasgui ->
-      let yasqe = self#yasqe yasgui in
-      yasqe##.options##.sparql##.requestMethod := string (match meth with `GET -> "GET" | `POST -> "POST")
-
-  method set_query (sparql : string) : unit =
-    match this_opt with
-    | None ->
-      let html = "<xmp>" ^ sparql ^ "</xmp>" in
-      jquery_set_innerHTML "#sparql-query" html
-    | Some yasgui ->
-      let yasqe = self#yasqe yasgui in
-      yasqe##setValue (string sparql)
-
-  method set_response (resp : string) : unit =
-    match this_opt with
-    | None -> ()
-    | Some yasgui ->
-      let yasr = self#yasr yasgui in
-      yasr##setResponse (string resp)
-
-  method refresh : unit =
-    match this_opt with
-    | None -> ()
-    | Some yasgui ->
-      let yasqe = self#yasqe yasgui in
-      let yasr = self#yasr yasgui in
-      yasqe##setValue (yasqe##getValue ());
-      yasr##draw ()
-end
-
-(* Google charts bindings *)
-  
-let google =
-object
-  method set_on_load_callback : 'a. (unit -> 'a) -> 'a = fun k ->
-    let g = Unsafe.global##.google in
-    if g = Js.undefined
-    then k ()
-    else (
-      let k () =
-	firebug "Loaded document and google charts";
-	k () in
-      g##.charts##setOnLoadCallback (wrap_callback k)
-    )
-      
-  method draw_map (points : (float * float * string) list) (elt_map : Dom_html.element t) : unit =
-    let g = Unsafe.global##.google in
-    if g = Js.undefined
-    then ()
-    else (
-    firebug "Drawing map";
-    let constr_Map = Unsafe.global##.Map in
-    let map = new%js constr_Map elt_map in
-    let table =
-      let data =
-	let col t = Inject.(obj [| "type", string t |]) in
-	let row lat long name =
-	  let cell v = Inject.(obj [| "v", float v |]) in
-	  Inject.(obj [| "c", array [| cell lat; cell long; cell (string name) |] |]) in
-	Inject.(obj [| 
-	  "cols", array [| col "number"; col "number"; col "string" |];
-	  "rows", array (Array.of_list (List.map (fun (lat,long,name) -> row lat long name) points)) |]) in
-      let constr_DataTable = Unsafe.global##.DataTable in
-      new%js constr_DataTable data in
-    let options = Inject.(obj [|
-      "showTooltip", bool true;
-      "showInfoWindow", bool true;
-      "useMapTypeControl", bool true;
-      "icons",
-      obj [| "default",
-	     obj [| "normal",
-		    string "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
-
-		    "selected",
-		    string "http://maps.google.com/mapfiles/ms/icons/blue-dot.png" |] |] |]) in
-    let _ = map##draw table options in
-    firebug "Drawed the map"
-    )
-
-end
-
-(* Wikidata services *)
-module Wikidata =
-  struct
-    let entities_of_json ojson : string list option =
-      try
-	let oquery = Unsafe.get ojson (string "query") in
-	let osearch = Unsafe.get oquery (string "search") in
-	let n = truncate (to_float (Unsafe.get osearch (string "length"))) in
-	let le = ref [] in
-	for i = n-1 downto 0 do
-	  let oresult = Unsafe.get osearch (string (string_of_int i)) in
-	  let otitle = Unsafe.get oresult (string "title") in
-	  le := (Js.to_string otitle)::!le
-	done;
-	firebug (string_of_int n ^ " wikidata entities found");
-	Some !le
-      with _ ->
-	None
-
-    let ajax_entity_search (query : string) (limit : int) (k : string list option -> unit) : unit =
-      if String.length query < 3
-      then k None
-      else
-	let _ = firebug ("Wikidata search: " ^ query) in
-	let query_url =
-	  Printf.sprintf
-	    "https://www.wikidata.org/w/api.php?action=query&list=search&format=json&srlimit=%d&srsearch=%s"
-	    (*"https://www.wikidata.org/w/api.php?action=wbsearchentities&format=json&language=en&limit=%d&search=%s" (* type=item|property *) NOTE: less flexible search *)
-	    limit
-	    (Url.urlencode query) in
-	Lwt.ignore_result
-	  (Lwt.bind
-	     (Jsonp.call_custom_url (*~timeout:0.5*)
-		(fun name -> query_url ^ "&callback=" ^ name))
-	     (fun json ->
-	      k (entities_of_json json);
-	      Lwt.return ()))
-	
-  end

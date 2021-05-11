@@ -1,9 +1,19 @@
+(**
+   Widget for displaying, moving, and deleting a focus.
+   @author Sébastien Ferré (ferre AT irisa DOT fr)
+ *)
 
 open Js_of_ocaml
 
 open Js
 open Jsutils
 
+(** The class of focus widgets.
+
+    [new widget ~id ~html_of_word] creates a new focus widget in the HTML element identified by [id], and where function [html_of_word] is used to generate HTML elements for custom words. 
+
+    The widget has control buttons to move the focus up, or to delete the part under focus. Each part of the displayed syntax can be clciked to change/move the focus.
+*)
 class ['word,'input,'focus] widget
   ~(id : Html.id) (* where to insert the widget in the DOM *)
   ~(html_of_word : 'word -> Html.t) (* rendering words *)
@@ -12,14 +22,18 @@ object
   val focus_dico : 'focus Html.dico = new Html.dico (id ^ "-focus")
 
   val mutable on_focus_change : 'focus -> unit = fun foc -> ()
-  method on_focus_change f = on_focus_change <- f
+  (** Defines the function to be called on the focus of the part that has been clicked. *)
+  method on_focus_change (f : 'focus -> unit) : unit = on_focus_change <- f
 
   val mutable on_focus_up : unit -> unit = fun () -> ()
+  (** Defines the function to be called when the button for moving the focus up has been clicked. *)
   method on_focus_up f = on_focus_up <- f
 
   val mutable on_focus_delete : unit -> unit = fun () -> ()
+  (** Defines the function to be called when the button for deleting the part under focus has been clicked. *)
   method on_focus_delete f = on_focus_delete <- f
-					  
+
+  (** Displays the given syntax in the widget after converting it into HTML. The class argument [html_of_word] is used for the conversion of custom words (see {!Syntax}). *)
   method set_syntax (xml : ('word,'input,'focus) Syntax.xml) : unit =
     focus_dico#clear;
     jquery (Html.selector_id id)
@@ -43,4 +57,5 @@ object
 	      on_focus_delete ())))
        
 end
+   
 

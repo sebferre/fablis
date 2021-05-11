@@ -1,8 +1,14 @@
+(**
+   Utilities for generating HTML contents as strings.
+   @author Sébastien Ferré (ferre AT irisa DOT fr)
+ *)
 
 open Js_of_ocaml
-       
+
+(** An alias type for HTML strings. *)
 type t = string
 
+(** An alias type for HTML element ids.  *)
 type id = string
 
 let selector_id id = "#" ^ id

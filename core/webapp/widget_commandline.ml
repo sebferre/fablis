@@ -1,12 +1,27 @@
+(**
+   Widget selecting suggestions through a commandline.
+   @author Sébastien Ferré (ferre AT irisa DOT fr)
+ *)
 
 open Js_of_ocaml
 
 open Js
 open Jsutils
 
+(** An alias type for commands as strings. *)
 type command = string
+
+(** An alias type for matching scores as floats. *)
 type score = float (* in [0,1] *)
-   
+
+(** The class of commandline widgets.
+
+[new widget ~id ~html_of_suggestion ~score_of_suggestion ~command_of_suggestion] creates a new commandline widget in the HTML element identified by [id], where:
+- [html_of_suggestion ~input_dico sugg] must return the HTML representation of the suggestion [sugg], using an input dictionary,
+- [score_of_suggestion sugg cmd] returns the matching score of suggestion [sugg] against command [cmd],
+- [command_of_suggestion sugg] returns a command that selects suggestion [sugg].
+
+ *)
 class ['suggestion] widget
         ~(id : Html.id)
         ~(html_of_suggestion : input_dico:Html.input_dico -> 'suggestion -> Html.t)
@@ -69,18 +84,21 @@ object (self)
                  input##.style##.color := string "black"));
           initialized <- true)
 
+  (** Sets the set of available suggestions. *)
+  method set_suggestions (lfsugg : 'suggestion Lis.forest list) : unit =
+    self#init;
+    current_suggestions <- lfsugg
+
+  (** Defines the function to be called when a suggestion is selected by the input command. *)
+  method on_suggestion_selection (f : 'suggestion -> unit) : unit =
+    on_suggestion_selection <- f
+
+  (** Sets the placeholder of the commandline input as the command of the given suggestion [sugg]. *)
   method selected_suggestion sugg =
     jquery_input (Html.selector_id id ^ " input")
       (fun input ->
           input##.value := string "";
           input##.placeholder := string (command_of_suggestion sugg))
     
-  method on_suggestion_selection f =
-    on_suggestion_selection <- f
-
-  method set_suggestions (lfsugg : 'suggestion Lis.forest list) : unit =
-    self#init;
-    current_suggestions <- lfsugg
-        
 end
   

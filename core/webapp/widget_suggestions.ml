@@ -1,9 +1,18 @@
+(**
+   Widget for displaying and selecting suggestions.
+   @author Sébastien Ferré (ferre AT irisa DOT fr)
+ *)
 
 open Js_of_ocaml
        
 open Js
 open Jsutils
 
+(** The class of suggestion widgets. This widget can display several hierarchies of suggestions in different columns.
+
+[new widget ~id ~html_of_suggestion] creates a new suggestion widget in the HTML element identified by [id], and where function [html_of_suggestion] is used to generate HTML elements for suggestions.
+*)
+   
 class ['suggestion] widget
   ~(id : Html.id)
   ~(html_of_suggestion : input_dico:Html.input_dico -> 'suggestion -> Html.t)
@@ -11,10 +20,14 @@ class ['suggestion] widget
 object
   val sugg_dico : 'suggestion Html.dico = new Html.dico (id ^ "-suggestion")
   val input_dico : Html.input_dico = new Html.dico (id ^ "-suggestion-input")
-
   val mutable on_suggestion_selection : 'suggestion -> unit = fun sugg -> ()
+                                                                        
+  (** Defines the function to be called when a suggestion is selected. *)
   method on_suggestion_selection f = on_suggestion_selection <- f
-								  
+
+  (** Sets the set of available suggestions.
+
+[set_suggestions lcol lfsugg] sets [lfsugg] as the set of available suggestions, organized as a list of columns, where each column contains a forest of suggestions. [lcol] is the list of column names. *)
   method set_suggestions (lcol : string list) (lfsugg : 'suggestion Lis.forest list) : unit =
     let cpt = ref 0 in (* counter for collapsable dirs *)
     let select_suggestion elt =

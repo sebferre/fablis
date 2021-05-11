@@ -11,19 +11,21 @@ type freq = { value : int; (** The frequency as a non-negative integer. *)
                                  value. *)
             }
 
-(** The type of suggestion trees to organize suggestions into hierarchies. Tree leaves are made of individual suggestions, while internal tree nodes are directories with a string as a name, and a suggestion forest as contents. *)
+(** The type of suggestion trees to organize suggestions into hierarchies. 
+- [`Sugg sugg] is a tree leaf made of a single suggestion [sugg],
+- [`Dir (name, fsugg)] is an internal tree node, a kind of directory, with a [name], and a suggestion forest [fsugg] as contents. 
+
+*)
 type 'suggestion tree =
   [ `Dir of string * 'suggestion forest
   | `Sugg of 'suggestion ]
 
-(** The type of suggestion forests, which are simply lists of suggestion trees. *)
+(** The type of suggestion forests, which are lists of suggestion trees. *)
  and 'suggestion forest = 'suggestion tree list  
 
 (** Inserts a suggestion into a suggestion forest at some path (a list of directory names).
-    @param path a list of directory names to traverse from the tree roots downward
-    @param sugg the suggestion to insert
-    @param forest the suggestion forest 
-    @return a new suggestion forest resulting from the insertion *)
+
+[insert_suggestion path sugg fsugg] insert suggestion [sugg] into suggestion forest [fsugg] at path [path]. *)
 let rec insert_suggestion (path : string list) (sugg : 'suggestion) (forest : 'suggestion forest) : 'suggestion forest =
   match path with
   | [] -> forest @ [`Sugg sugg]
@@ -46,19 +48,19 @@ object
   (** Returns the focus that defines this place. *)
   method focus = focus
 
-  (** Evaluates this place, and asynchronously calls two functions for processing, respectively, the place extent and the place suggestions. *)
+  (** Evaluates this place, and asynchronously calls two processing functions, respectively, on the place extent and on the place suggestions. *)
   method virtual eval : ('extent -> unit) -> ('suggestion forest list -> unit) -> unit
-
-  (** Activates a chosen suggestion, which returns a new place, if well-defined. *)  
-  method virtual activate : 'suggestion -> ('lis,'focus,'extent,'suggestion) place option
 
   (** Aborts any on-going computation in the asynchronous evaluation of this place (see {!method:Lis.place.eval}). *)
   method virtual abort : unit
 
+  (** Activates a chosen suggestion, which returns a new place, if well-defined. *)  
+  method virtual activate : 'suggestion -> ('lis,'focus,'extent,'suggestion) place option
+
   (** Returns a JSON representation of this place. This can be used to save a navigation state, and later recover it with {!method:Lis.lis.place_of_json}. *)
   method virtual json : Yojson.Safe.t
 
-  (** Returns a pair (MIME type, contents) to export the place contents (eg results) as a file. *)
+  (** Returns a pair (MIME type, contents) to export the place contents (typically results) as a file. *)
   method virtual results : string * string
 end
 

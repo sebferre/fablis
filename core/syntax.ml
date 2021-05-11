@@ -65,7 +65,7 @@ let xml_list_ctx (f : 'a -> 'a Focus.list_ctx -> ('word,'input,'focus) xml)
     : ('word,'input,'focus) xml list =
   Focus.list_of_ctx
     xml_x
-    (Focus.ctx_of_list_ctx x ll_rr
+    (Focus.ctx_of_list_focus (x,ll_rr)
      |> Focus.map_list_ctx
 	  (fun (x1,ll_rr1) -> f x1 ll_rr1))
 

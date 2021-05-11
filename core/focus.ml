@@ -5,43 +5,44 @@
 
 (** {1 List Contexts} *)
 
-(** Type of list contexts, for use in focuses. The first part is the
+(** The type of list contexts, for use in focuses. The first part is the
    sublist of elements on the left, in reverse order, and the second
    part is the sublist of elements on the right.
 
-   For example, the list context of element [2] in list [[0;1;2;3;4]]
-   is the pair [([1;0],[3;4])]. *)
+   For example, given a list [[0;1;2;3;4]], the list context of element [2] is the pair [([1;0],[3;4])], and the list context of element [3] is  [([2;1;0],[4])]. *)
 type 'a list_ctx = 'a list * 'a list
 
-(** Zips a list context [(ll,rr)] with an element [x] in the middle. 
+(** The type of list focuses. A list focus is made of a list element and its list context. *)
+type 'a list_focus = 'a * 'a list_ctx
+                 
+(** Zips a list context [(ll,rr)] with an element [x] in the middle. It returns [List.rev ll @ x :: rr].
 
     If [ll] is [[y1; ...; yM]], and [rr] is [[z1; ...; zN]], the result is [[yM; ...; y1; x; z1; ...; zN]]. *)
 let list_of_ctx (x : 'a) (ll,rr : 'a list_ctx) : 'a list = List.rev_append ll (x :: rr)
 
-(** Zips a list context [(ll,rr)] with elements [lx] in the middle. *)
+(** Zips a list context [(ll,rr)] with elements [lx] in the middle. It returns [List.rev ll @ lx @ rr]*)
 let list_of_ctx_many (lx : 'a list) (ll, rr : 'a list_ctx) : 'a list = List.rev_append ll (lx @ rr)
 
-(** Zips a list context [(ll,rr)] with no element in the middle. *)
+(** Zips a list context [(ll,rr)] with no element in the middle. It returns [List.rev ll @ rr].*)
 let list_of_ctx_none (ll, rr : 'a list_ctx) : 'a list = List.rev_append ll rr
 
-(** Unzips a list [lr] in all possible positions, associating to each
-   list element its list context.
+(** Unzips a list [lr] in all possible positions, returning a list of list focuses, one for each element of [lr].
 
    If [lr] is [\[x1;x2;x3\]], the result is [[(x1,([],[x2;x3]); (x2,([x1],[x3])); (x3,([x2;x1],[]))]]. *)
-let ctx_of_list (lr : 'a list) : ('a * 'a list_ctx) list =
+let focus_list_of_list (lr : 'a list) : 'a list_focus list =
   let rec aux ll = function
     | [] -> []
     | x::rr -> (x,(ll,rr)) :: aux (x::ll) rr
   in
   aux [] lr
 
-(** Given an element [x] and its list context [(ll,rr)], returns a list
+(** Given a list focus [x, (ll,rr)], returns a list
    context composed of the left element focuses, and the right element
    focuses. 
 
    If [ll] is [[y1;y2]], and [rr] is [[z1]], the result is
    [([(y1,([y2],[x;z1])); (y2,([],[y1;x;z1]))], [(z1,([x;y1;y2],[]))])]. *)
-let ctx_of_list_ctx (x : 'a) (ll,rr : 'a list_ctx) : ('a * 'a list_ctx) list_ctx =
+let ctx_of_list_focus (x, (ll,rr) : 'a list_focus) : 'a list_focus list_ctx =
   let rec aux_left rr = function
     | [] -> []
     | x1::ll1 -> (x1, (ll1,rr)) :: aux_left (x1::rr) ll1
@@ -104,12 +105,12 @@ let path_of_list_ctx (ll,rr : 'a list_ctx) (path : path) : path =
 
     [list_focus_of_path_list path lr] returns a triple [(path',(ll,rr),x)] where [x] is an element of [lr] at position K, where [(ll,rr)] is the list context of [x] in [lr], where the length of [ll] is hence K, where [path] starts with exactly K [RIGHT] steps, and where [path'] is the suffix of [path] starting after the K [RIGHT] steps.
    @raise Invalid_path if [path] is undefined in [lr], if K is greater or equal to the length of [ll] *)
-let list_focus_of_path_list (path : path) (lr : 'a list) : path * 'a list_ctx * 'a =
+let list_focus_of_path_list (path : path) (lr : 'a list) : path * 'a list_focus =
   let rec aux path (ll,rr) x =
     match path, rr with
     | RIGHT::_, [] -> raise Invalid_path
     | RIGHT::path1, y::rr1 -> aux path1 (x::ll,rr1) y
-    | _ -> path, (ll,rr), x
+    | _ -> path, (x,(ll,rr))
   in
   match lr with
   | [] -> raise Invalid_path

@@ -5,7 +5,7 @@
 (** The type for the XML-like representation of the syntax of focuses and suggestions.
 - ['word] is the type of custom words
 - ['input] is the type of user-editable parts
-- ['focus] is the type of focuses (that are representeed by this syntax
+- ['focus] is the type of focuses (that are representeed by this syntax)
 
  *)
 type ('word,'input,'focus) xml = ('word,'input,'focus) node list
@@ -56,18 +56,18 @@ and xml_node_text_content lexicon = function
 
 (** Builds the syntax of a list from a list focus.
 
-    [xml_list_ctx f x ([...; y], [...; z]) xml_x] returns the list of syntaxes [[xml_y; ...; xml_x; ...; xml_z]], a mapping from the list zipped from [x] and [([...; y], [...; z])] to syntaxes, i.e. [xml] value. Apart from [xml_x], each syntax element is obtained by applying function [f] to the corresponding element and its list context.
+    [xml_list_focus f (x, ([...; y], [...; z])) xml_x] returns the list of syntaxes [[xml_y; ...; xml_x; ...; xml_z]], a mapping from the list zipped from [x] and [([...; y], [...; z])] to syntaxes, i.e. [xml] value. Apart from [xml_x], each syntax element is obtained by applying function [f] to the corresponding element and its list context.
 
-   For example, [xml_list_ctx f x2 ([x1; x0], [x3; x4]) xml_x2] returns the list [[f x0 ([],[x1;x2;x3;x4]); f x1 ([x0]; [x2;x3;x4]); xml_x2; f x3 ([x2;x1;x0],[x4]); f x4 ([x3;x2;x1;x0],[])]]. *)
-let xml_list_ctx (f : 'a -> 'a Focus.list_ctx -> ('word,'input,'focus) xml)
-		 (x : 'a) (ll_rr : 'a Focus.list_ctx)
+   For example, [xml_list_ctx f (x2, ([x1; x0], [x3; x4])) xml_x2] returns the list [[f x0 ([],[x1;x2;x3;x4]); f x1 ([x0]; [x2;x3;x4]); xml_x2; f x3 ([x2;x1;x0],[x4]); f x4 ([x3;x2;x1;x0],[])]]. *)
+let xml_list_focus (f : 'a Focus.list_focus -> ('word,'input,'focus) xml)
+		 (foc : 'a Focus.list_focus)
 		 (xml_x : ('word,'input,'focus) xml)
     : ('word,'input,'focus) xml list =
   Focus.list_of_ctx
     xml_x
-    (Focus.ctx_of_list_focus (x,ll_rr)
+    (Focus.ctx_of_list_focus foc
      |> Focus.map_list_ctx
-	  (fun (x1,ll_rr1) -> f x1 ll_rr1))
+	  (fun (x1,ll_rr1) -> f (x1,ll_rr1)))
 
 		       
     

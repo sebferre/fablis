@@ -80,7 +80,7 @@ type path = step list [@@deriving yojson]
 
 (** Exception raised when a path is not compatible with a data
    structure. *)
-exception Invalid_path
+exception Invalid_path of path
 
 (** Returns a focus path that navigates to a child data structure at some position. 
 
@@ -104,16 +104,17 @@ let path_of_list_ctx (ll,rr : 'a list_ctx) (path : path) : path =
 (** Returns a list focus by navigating into a list according to a given path. Also return the remaining path.
 
     [list_focus_of_path_list path lr] returns a triple [(path',(ll,rr),x)] where [x] is an element of [lr] at position K, where [(ll,rr)] is the list context of [x] in [lr], where the length of [ll] is hence K, where [path] starts with exactly K [RIGHT] steps, and where [path'] is the suffix of [path] starting after the K [RIGHT] steps.
-   @raise Invalid_path if [path] is undefined in [lr], if K is greater or equal to the length of [ll] *)
+
+   Raise [Invalid_path path'] if K is greater or equal to the length N of [ll], where [path'] is the remainder path after removing the N first [RIGHT] steps. *)
 let list_focus_of_path_list (path : path) (lr : 'a list) : path * 'a list_focus =
   let rec aux path (ll,rr) x =
     match path, rr with
-    | RIGHT::_, [] -> raise Invalid_path
+    | RIGHT::_, [] -> raise (Invalid_path path)
     | RIGHT::path1, y::rr1 -> aux path1 (x::ll,rr1) y
     | _ -> path, (x,(ll,rr))
   in
   match lr with
-  | [] -> raise Invalid_path
+  | [] -> raise (Invalid_path path)
   | x::rr -> aux path ([],rr) x
 
            

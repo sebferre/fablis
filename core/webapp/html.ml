@@ -134,13 +134,14 @@ let ul ?id ?classe ?title items =
   add "</ul>";
   Buffer.contents buf
 
-let input ?id ?classe ?title ?placeholder ?(hidden = false) input_type =
+let input ?id ?classe ?title ?placeholder ?accept ?(hidden = false) input_type =
   "<input"
   ^ attr_opt "id" id
   ^ attr_opt "class" classe
   ^ attr_opt "title" title
   ^ attr_opt "type" (Some input_type)
   ^ attr_opt "placeholder" placeholder
+  ^ attr_opt "accept" accept
   ^ attr_opt "style" (if hidden then Some "display:none" else None)
   ^ ">"
 
@@ -206,7 +207,8 @@ type input_info =
 	placeholder : string;
 	input_update : Dom_html.inputElement Js.t input_update }
   | FileElt of
-      { input_update : Dom_html.inputElement Js.t input_update }
+      { accept : string option; (* accepted file extensions/mime types *)
+        input_update : Dom_html.inputElement Js.t input_update }
   | SelectElt of
       { values : string list;
 	input_update : Dom_html.selectElement Js.t input_update }
@@ -240,9 +242,10 @@ let string_info (f : string input_update_function) : input_info =
      |> k)
     f
     
-let fileElt_info (f : (string * string) input_update_function) : input_info =
+let fileElt_info accept (f : (string * string) input_update_function) : input_info =
   FileElt
-    { input_update =
+    { accept;
+      input_update =
 	new input_update
 	    (fun input_elt k ->
 	     Jsutils.file_string_of_input
@@ -287,10 +290,11 @@ let html_of_input_info key : input_info -> t = function
 	   ~classe:"suggestion-input"
 	   ~placeholder
 	   input_type
-  | FileElt { input_update } ->
+  | FileElt { input_update; accept } ->
      let html_input =
        input ~id:key
 	     ~classe:"suggestion-file-input"
+             ?accept
 	     ~hidden:true
 	     "file" in
      "<label class=\"suggestion-file-label btn btn-default\">Choose..." ^ html_input ^ "</label>"

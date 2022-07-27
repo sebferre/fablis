@@ -155,13 +155,16 @@ let start
        jquery_document
          (onkeydown (fun elt ev ->
               if handle_document_keydown ev hist#present callback_hist then ()
-              else if to_bool ev##.ctrlKey then
+              else if to_bool ev##.altKey then
                 ( match ev##.keyCode with
                 | 36 (* Home *) ->
+                   Dom.preventDefault ev;
                    hist#home; refresh ()
                 | 37 (* ArrowLeft *) ->
+                   Dom.preventDefault ev;
                    if hist#back then refresh ()
                 | 39 (* ArrowRight *) ->
+                   Dom.preventDefault ev;
                    if hist#forward then refresh ()
                 | _ -> () )
               else ()

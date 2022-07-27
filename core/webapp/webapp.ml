@@ -37,10 +37,10 @@ object (self)
   method replace (p : 'place) : unit =
     present <- p
 
-  (** Resets history. The current place is the initial place. The sets of backward and forward places become empty. *)
+  (** Pushes the initial place as the present place, on top of visited places. *)
   method home : unit =
     present#abort;
-    past <- [];
+    past <- present::past;
     present <- p0;
     future <- []
 

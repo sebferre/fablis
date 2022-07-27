@@ -273,6 +273,8 @@ let icon_focusup ?id ~title () =
   span ?id ~title (glyphicon "fullscreen" (*"chevron-up"*))
 let icon_delete ?id ~title () =
   span ?id ~title (glyphicon "remove")
+let icon_delete_constr ?id ~title () =
+  span ?id ~title (glyphicon "remove-sign")
 
 let focus_dropdown =
   span ~id:"focus-dropdown"
@@ -281,6 +283,7 @@ let focus_dropdown =
 
 let focus_controls =
   icon_focusup ~id:"focusup-current-focus" ~title:"Move focus up" ()
+  ^ icon_delete_constr ~id:"delete-current-constr" ~title:"Delete current constructor" ()
   ^ icon_delete ~id:"delete-current-focus" ~title:"Delete current focus" ()
 (* ^ focus_dropdown *) (* TODO *)
 

@@ -33,6 +33,10 @@ object
   (** Defines the function to be called when the button for deleting the part under focus has been clicked. *)
   method on_focus_delete f = on_focus_delete <- f
 
+  val mutable on_focus_delete_constr : unit -> unit = fun () -> ()
+  (** Defines the function to be called when the button for deleting the constructor under focus has been clicked. *)
+  method on_focus_delete_constr f = on_focus_delete_constr <- f
+
   (** Displays the given syntax in the widget after converting it into HTML. The class argument [html_of_word] is used for the conversion of custom words (see {!Syntax}). *)
   method set_syntax (xml : ('word,'input,'focus) Syntax.xml) : unit =
     focus_dico#clear;
@@ -54,8 +58,10 @@ object
 	jquery_from elt "#delete-current-focus"
 	   (onclick (fun elt_button ev ->
 	      Dom_html.stopPropagation ev;
-	      on_focus_delete ())))
+	      on_focus_delete ()));
+	jquery_from elt "#delete-current-constr"
+	   (onclick (fun elt_button ev ->
+	      Dom_html.stopPropagation ev;
+	      on_focus_delete_constr ())))
        
 end
-   
-
